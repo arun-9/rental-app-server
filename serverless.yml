@@ -1,0 +1,51 @@
+service: sls-postgresql-example
+
+plugins:
+  - serverless-aws-lambda
+
+package:
+  individually: true
+  files:
+    - { at: .aws_lambda/bundled_node_modules/, as: node_modules }
+
+custom:
+  timeout: 10
+  serverless-aws-lambda:
+    configPath: ./slsconfig.ts
+  local: # docker-compose.yml
+    DB_HOST: localhost:5432
+    DB_NAME: myDb
+    DB_USER: postgres
+    DB_PASSWORD: supersecret
+  prod:
+    DB_HOST: prodhost:5432
+    DB_NAME: myProdDb
+    DB_USER: produser
+    DB_PASSWORD: prodsecret
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  versionFunctions: false
+  region: eu-west-3
+  deploymentMethod: direct
+  timeout: ${self:custom.timeout}
+  environment:
+    TIMEOUT: ${self:custom.timeout}
+    DB_HOST: ${self:custom.${opt:stage}.DB_HOST}
+    DB_NAME: ${self:custom.${opt:stage}.DB_NAME}
+    DB_USER: ${self:custom.${opt:stage}.DB_USER}
+    DB_PASSWORD: ${self:custom.${opt:stage}.DB_PASSWORD}
+
+functions:
+  insertUser:
+    handler: src/handlers/insertUser.default
+    events:
+      - httpApi: POST /users
+
+  getUser:
+    handler: src/handlers/getUser.default
+    events:
+      - httpApi:
+          method: GET
+          path: /users/{id}

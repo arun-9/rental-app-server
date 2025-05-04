@@ -1,0 +1,39 @@
+{
+  "total": 2,
+  "done": 2,
+  "coverage": 100,
+  "result": {
+    "insertUser": {
+      "apg": {
+        "total": 1,
+        "done": 1,
+        "endpoints": [
+          {
+            "paths": [
+              "/users"
+            ],
+            "methods": {
+              "POST": true
+            }
+          }
+        ]
+      }
+    },
+    "getUser": {
+      "apg": {
+        "total": 1,
+        "done": 1,
+        "endpoints": [
+          {
+            "paths": [
+              "/users/{id}"
+            ],
+            "methods": {
+              "GET": true
+            }
+          }
+        ]
+      }
+    }
+  }
+}
