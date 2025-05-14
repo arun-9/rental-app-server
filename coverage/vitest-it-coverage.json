@@ -3,7 +3,7 @@
   "done": 2,
   "coverage": 100,
   "result": {
-    "insertUser": {
+    "createLandloard": {
       "apg": {
         "total": 1,
         "done": 1,

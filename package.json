@@ -16,8 +16,9 @@
     "typescript": "^5.0.4"
   },
   "scripts": {
+    "build": "tsc",
     "sls": "sls",
-    "start": "cross-env SLS_DEBUG=* sls aws-lambda -s local",
+    "start:local": "cross-env SLS_DEBUG=* sls aws-lambda -s local",
     "start:db": "docker-compose up -d",
     "test": "sls aws-lambda -s local vitest",
     "test:oneshot": "sls aws-lambda -s local vitest oneshot",

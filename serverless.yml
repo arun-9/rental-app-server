@@ -38,14 +38,14 @@ provider:
     DB_PASSWORD: ${self:custom.${opt:stage}.DB_PASSWORD}
 
 functions:
-  insertUser:
-    handler: src/handlers/insertUser.default
+  createProperty:
+    handler: src/handlers/insertProperty.default
     events:
-      - httpApi: POST /users
+      - httpApi: POST /properties
 
   getUser:
-    handler: src/handlers/getUser.default
+    handler: src/handlers/getProperty.default
     events:
       - httpApi:
           method: GET
-          path: /users/{id}
+          path: /properties/{id}
