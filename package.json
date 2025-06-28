@@ -10,9 +10,8 @@
     "pg": "^8.11.0",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.31.1",
-    "serverless": "^3.31.0",
-    "serverless-aws-lambda": "^4.5.8",
-    "serverless-aws-lambda-vitest": "^1.2.2",
+    "serverless-aws-lambda": "^5.0.3",
+    "serverless-aws-lambda-vitest": "^1.1.0",
     "typescript": "^5.0.4"
   },
   "scripts": {
@@ -23,5 +22,9 @@
     "test": "sls aws-lambda -s local vitest",
     "test:oneshot": "sls aws-lambda -s local vitest oneshot",
     "deploy": "sls deploy -s prod"
+  },
+  "dependencies": {
+    "node-modules": "^0.0.1",
+    "serverless": "^3.40.0"
   }
 }

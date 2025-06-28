@@ -16,7 +16,7 @@ custom:
     DB_HOST: localhost:5432
     DB_NAME: myDb
     DB_USER: postgres
-    DB_PASSWORD: supersecret
+    DB_PASSWORD: 5678
   prod:
     DB_HOST: prodhost:5432
     DB_NAME: myProdDb
