@@ -12,7 +12,7 @@ custom:
   timeout: 10
   serverless-aws-lambda:
     configPath: ./slsconfig.ts
-  local: # docker-compose.yml
+  local:
     DB_HOST: localhost:5432
     DB_NAME: myDb
     DB_USER: postgres
@@ -38,14 +38,37 @@ provider:
     DB_PASSWORD: ${self:custom.${opt:stage}.DB_PASSWORD}
 
 functions:
+  insertManager:
+    handler: src/handlers/insertManager.default
+    events:
+      - httpApi:
+          method: POST
+          path: /managers
+
   createProperty:
     handler: src/handlers/insertProperty.default
     events:
-      - httpApi: POST /properties
+      - httpApi:
+          method: POST
+          path: /properties
 
-  getUser:
+  getPropertyById:
     handler: src/handlers/getProperty.default
     events:
       - httpApi:
           method: GET
           path: /properties/{id}
+
+  getPropertiesByManager:
+    handler: src/handlers/getPropertiesByManager.default
+    events:
+      - httpApi:
+          method: GET
+          path: /properties/manager/{managerId}
+
+  createUnit:
+    handler: src/handlers/insertUnit.default
+    events:
+      - httpApi:
+          method: POST
+          path: /units

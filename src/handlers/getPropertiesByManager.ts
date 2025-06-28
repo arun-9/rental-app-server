@@ -9,36 +9,37 @@ let sequelize: Sequelize | null = null;
 let Properties: IProperties | null = null;
 
 export default async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  if (!sequelize) {
-    sequelize = await connectToDb();
-    await getManagerModel(sequelize); // Ensure managers table is synced
-    Properties = await getPropertyModel(sequelize);
-  }
+  const managerId = event.pathParameters?.managerId;
 
-  const body = JSON.parse(event.body ?? "{}");
-
-  // Optional: basic validation
-  if (!body.managerId || !body.name || !body.address || !body.imgUrl) {
+  if (!managerId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: "Missing required fields." }),
+      body: JSON.stringify({ message: "Missing managerId in path." }),
     };
   }
 
+  if (!sequelize) {
+    sequelize = await connectToDb();
+    await getManagerModel(sequelize);
+    Properties = await getPropertyModel(sequelize);
+  }
+
   try {
-    const createdProperty = await Properties.create(body, { returning: true });
+    const foundProperties = await Properties.findAll({
+      where: { managerId },
+    });
 
     return {
-      statusCode: 201,
+      statusCode: 200,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(createdProperty.toJSON()),
+      body: JSON.stringify(foundProperties),
     };
   } catch (err: any) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to insert property", details: err.message }),
+      body: JSON.stringify({ error: "Failed to fetch properties", details: err.message }),
     };
   }
 };

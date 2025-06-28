@@ -20,6 +20,16 @@ const schema: ModelAttributes = {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  managerId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: "managers",
+      key: "managerId",
+    },
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  },
 };
 
 type IProperties = typeof Properties;
