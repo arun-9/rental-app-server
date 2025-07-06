@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getProperty.ts
-var getProperty_exports = {};
-__export(getProperty_exports, {
-  default: () => getProperty_default
+// src/handlers/insertUnit.ts
+var insertUnit_exports = {};
+__export(insertUnit_exports, {
+  default: () => insertUnit_default
 });
-module.exports = __toCommonJS(getProperty_exports);
+module.exports = __toCommonJS(insertUnit_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -51,9 +51,9 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/properties.ts
+// src/db/models/units.ts
 var import_sequelize2 = require("sequelize");
-var Properties = class extends import_sequelize2.Model {
+var Units = class extends import_sequelize2.Model {
 };
 var schema = {
   id: {
@@ -61,52 +61,50 @@ var schema = {
     type: import_sequelize2.DataTypes.INTEGER,
     autoIncrement: true
   },
-  name: {
+  // This field is `UNIT NO` in the UI
+  unitNumber: {
     type: import_sequelize2.DataTypes.STRING,
     allowNull: false
   },
-  address: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
+  status: {
+    type: import_sequelize2.DataTypes.ENUM("vacant", "occupied"),
+    defaultValue: "vacant"
   },
-  imgUrl: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  managerId: {
-    type: import_sequelize2.DataTypes.UUID,
+  // Foreign key
+  propertyId: {
+    type: import_sequelize2.DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: "managers",
-      key: "managerId"
+      model: "properties",
+      key: "id"
     },
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE"
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE"
   }
 };
-var getPropertyModel = async (sequelize3) => {
+var getUnitModel = async (sequelize3) => {
   if (sequelize3) {
-    Properties.init(schema, { sequelize: sequelize3, modelName: "properties", timestamps: false });
-    await Properties.sync();
+    Units.init(schema, { sequelize: sequelize3, modelName: "units", timestamps: false });
+    await Units.sync();
   }
-  return Properties;
+  return Units;
 };
 
-// src/handlers/getProperty.ts
+// src/handlers/insertUnit.ts
 var sequelize2 = null;
-var Properties2 = null;
-var getProperty_default = async (event) => {
+var Units2 = null;
+var insertUnit_default = async (event) => {
   if (!sequelize2) {
     sequelize2 = await connectToDb();
-    Properties2 = await getPropertyModel(sequelize2);
+    Units2 = await getUnitModel(sequelize2);
   }
-  const foundProperty = await Properties2.findByPk(event.pathParameters.id);
+  const createdUnit = await Units2.create(JSON.parse(event.body), { returning: true });
   return {
-    statusCode: 200,
+    statusCode: 201,
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(foundProperty.toJSON())
+    body: JSON.stringify(createdUnit.toJSON())
   };
 };
-//# sourceMappingURL=getProperty.js.map
+//# sourceMappingURL=insertUnit.js.map
