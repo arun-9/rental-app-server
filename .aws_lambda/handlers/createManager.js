@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/insertProperty.ts
-var insertProperty_exports = {};
-__export(insertProperty_exports, {
-  default: () => insertProperty_default
+// src/handlers/createManager.ts
+var createManager_exports = {};
+__export(createManager_exports, {
+  handler: () => handler
 });
-module.exports = __toCommonJS(insertProperty_exports);
+module.exports = __toCommonJS(createManager_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -51,22 +51,25 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/managers.ts
+// src/db/models/Manager.ts
 var import_sequelize2 = require("sequelize");
-var Managers = class extends import_sequelize2.Model {
+var Manager = class extends import_sequelize2.Model {
+  id;
+  cognitoId;
+  name;
+  email;
+  phoneNumber;
 };
 var schema = {
   id: {
     type: import_sequelize2.DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
-    // ✅ PK as per image
     allowNull: false
   },
   cognitoId: {
     type: import_sequelize2.DataTypes.STRING,
     unique: true,
-    // ✅ Unique constraint
     allowNull: false
   },
   name: {
@@ -82,90 +85,73 @@ var schema = {
     allowNull: false
   }
 };
-var getManagerModel = async (sequelize3) => {
-  if (sequelize3) {
-    Managers.init(schema, {
-      sequelize: sequelize3,
+var getManagerModel = async (sequelize2) => {
+  if (sequelize2) {
+    Manager.init(schema, {
+      sequelize: sequelize2,
       modelName: "managers",
       tableName: "managers",
       timestamps: false
     });
-    await Managers.sync();
+    await Manager.sync();
   }
-  return Managers;
+  return Manager;
 };
 
-// src/db/models/properties.ts
-var import_sequelize3 = require("sequelize");
-var Properties = class extends import_sequelize3.Model {
+// src/handlers/createManager.ts
+var corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Content-Type": "application/json"
 };
-var schema2 = {
-  id: {
-    primaryKey: true,
-    type: import_sequelize3.DataTypes.INTEGER,
-    autoIncrement: true
-  },
-  name: {
-    type: import_sequelize3.DataTypes.STRING,
-    allowNull: false
-  },
-  address: {
-    type: import_sequelize3.DataTypes.STRING,
-    allowNull: false
-  },
-  imgUrl: {
-    type: import_sequelize3.DataTypes.STRING,
-    allowNull: false
-  },
-  managerId: {
-    type: import_sequelize3.DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: "managers",
-      key: "managerId"
-    },
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE"
-  }
-};
-var getPropertyModel = async (sequelize3) => {
-  if (sequelize3) {
-    Properties.init(schema2, { sequelize: sequelize3, modelName: "properties", timestamps: false });
-    await Properties.sync();
-  }
-  return Properties;
-};
-
-// src/handlers/insertProperty.ts
-var sequelize2 = null;
-var Properties2 = null;
-var insertProperty_default = async (event) => {
-  if (!sequelize2) {
-    sequelize2 = await connectToDb();
-    await getManagerModel(sequelize2);
-    Properties2 = await getPropertyModel(sequelize2);
-  }
-  const body = JSON.parse(event.body ?? "{}");
-  if (!body.managerId || !body.name || !body.address || !body.imgUrl) {
+var handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
     return {
-      statusCode: 400,
-      body: JSON.stringify({ message: "Missing required fields." })
+      statusCode: 200,
+      headers: corsHeaders,
+      body: ""
     };
   }
   try {
-    const createdProperty = await Properties2.create(body, { returning: true });
+    const body = JSON.parse(event.body || "{}");
+    const { cognitoId, name, email, phoneNumber } = body;
+    if (!cognitoId || !name || !email || !phoneNumber) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ message: "Missing required fields." })
+      };
+    }
+    const sequelize2 = await connectToDb();
+    const Manager2 = await getManagerModel(sequelize2);
+    const existing = await Manager2.findOne({ where: { cognitoId } });
+    if (existing) {
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify(existing.toJSON())
+      };
+    }
+    const created = await Manager2.create({ cognitoId, name, email, phoneNumber });
     return {
       statusCode: 201,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(createdProperty.toJSON())
+      headers: corsHeaders,
+      body: JSON.stringify(created.toJSON())
     };
-  } catch (err) {
+  } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to insert property", details: err.message })
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: "Error creating manager",
+        error: error.message
+      })
     };
   }
 };
-//# sourceMappingURL=insertProperty.js.map
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  handler
+});
+//# sourceMappingURL=createManager.js.map
