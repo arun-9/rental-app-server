@@ -1,18 +1,27 @@
+// src/db/models/Manager.ts
 import { Sequelize, Model, DataTypes } from "sequelize";
 import type { ModelAttributes } from "sequelize";
 
-class Managers extends Model {}
+// Define class extending Sequelize Model
+class Manager extends Model {
+  public id!: number;
+  public cognitoId!: string;
+  public name!: string;
+  public email!: string;
+  public phoneNumber!: string;
+}
 
+// Schema definition
 const schema: ModelAttributes = {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
-    primaryKey: true, // ✅ PK as per image
+    primaryKey: true,
     allowNull: false,
   },
   cognitoId: {
     type: DataTypes.STRING,
-    unique: true,      // ✅ Unique constraint
+    unique: true,
     allowNull: false,
   },
   name: {
@@ -29,20 +38,21 @@ const schema: ModelAttributes = {
   },
 };
 
-type IManagers = typeof Managers;
-
-export const getManagerModel = async (sequelize?: Sequelize): Promise<IManagers> => {
+// Function to initialize the model with Sequelize instance
+export const getManagerModel = async (sequelize?: Sequelize): Promise<typeof Manager> => {
   if (sequelize) {
-    Managers.init(schema, {
+    Manager.init(schema, {
       sequelize,
       modelName: "managers",
       tableName: "managers",
       timestamps: false,
     });
-    await Managers.sync();
+
+    await Manager.sync(); // Sync table if it doesn't exist
   }
 
-  return Managers;
+  return Manager;
 };
 
-export type { IManagers };
+// Export the model type
+export type { Manager };

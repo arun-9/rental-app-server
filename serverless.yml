@@ -1,4 +1,4 @@
-service: sls-postgresql-example
+service: rent-management-service
 
 plugins:
   - serverless-aws-lambda
@@ -10,65 +10,64 @@ package:
 
 custom:
   timeout: 10
-  serverless-aws-lambda:
-    configPath: ./slsconfig.ts
+
+  # DB environment config per stage
   local:
-    DB_HOST: localhost:5432
+    DB_HOST: localhost
+    DB_PORT: 5432
     DB_NAME: myDb
     DB_USER: postgres
     DB_PASSWORD: 5678
+
   prod:
-    DB_HOST: prodhost:5432
+    DB_HOST: prodhost
+    DB_PORT: 5432
     DB_NAME: myProdDb
     DB_USER: produser
     DB_PASSWORD: prodsecret
 
+  # Plugin configuration (used by slsconfig.ts)
+  serverless-aws-lambda:
+    configPath: ./slsconfig.ts
+
 provider:
   name: aws
   runtime: nodejs18.x
-  versionFunctions: false
   region: eu-west-3
-  deploymentMethod: direct
   timeout: ${self:custom.timeout}
+  deploymentMethod: direct
+
   environment:
-    TIMEOUT: ${self:custom.timeout}
     DB_HOST: ${self:custom.${opt:stage}.DB_HOST}
+    DB_PORT: ${self:custom.${opt:stage}.DB_PORT}
     DB_NAME: ${self:custom.${opt:stage}.DB_NAME}
     DB_USER: ${self:custom.${opt:stage}.DB_USER}
     DB_PASSWORD: ${self:custom.${opt:stage}.DB_PASSWORD}
 
+  httpApi:
+    cors:
+      allowedOrigins:
+        - "*"
+      allowedHeaders:
+        - "*"
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+
 functions:
-  insertManager:
-    handler: src/handlers/insertManager.default
+  createManager:
+    handler: src/handlers/createManager.handler
     events:
       - httpApi:
           method: POST
           path: /managers
 
-  createProperty:
-    handler: src/handlers/insertProperty.default
-    events:
-      - httpApi:
-          method: POST
-          path: /properties
-
-  getPropertyById:
-    handler: src/handlers/getProperty.default
+  getManager:
+    handler: src/handlers/getManager.handler
     events:
       - httpApi:
           method: GET
-          path: /properties/{id}
-
-  getPropertiesByManager:
-    handler: src/handlers/getPropertiesByManager.default
-    events:
-      - httpApi:
-          method: GET
-          path: /properties/manager/{managerId}
-
-  createUnit:
-    handler: src/handlers/insertUnit.default
-    events:
-      - httpApi:
-          method: POST
-          path: /units
+          path: /managers/{cognitoId}

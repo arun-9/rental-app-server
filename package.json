@@ -24,6 +24,7 @@
     "deploy": "sls deploy -s prod"
   },
   "dependencies": {
+    "dotenv": "^17.1.0",
     "node-modules": "^0.0.1",
     "serverless": "^3.40.0"
   }

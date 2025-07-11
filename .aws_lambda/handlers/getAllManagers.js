@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/insertProperty.ts
-var insertProperty_exports = {};
-__export(insertProperty_exports, {
-  default: () => insertProperty_default
+// src/handlers/getAllManagers.ts
+var getAllManagers_exports = {};
+__export(getAllManagers_exports, {
+  handler: () => handler
 });
-module.exports = __toCommonJS(insertProperty_exports);
+module.exports = __toCommonJS(getAllManagers_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -95,77 +95,33 @@ var getManagerModel = async (sequelize3) => {
   return Managers;
 };
 
-// src/db/models/properties.ts
-var import_sequelize3 = require("sequelize");
-var Properties = class extends import_sequelize3.Model {
-};
-var schema2 = {
-  id: {
-    primaryKey: true,
-    type: import_sequelize3.DataTypes.INTEGER,
-    autoIncrement: true
-  },
-  name: {
-    type: import_sequelize3.DataTypes.STRING,
-    allowNull: false
-  },
-  address: {
-    type: import_sequelize3.DataTypes.STRING,
-    allowNull: false
-  },
-  imgUrl: {
-    type: import_sequelize3.DataTypes.STRING,
-    allowNull: false
-  },
-  managerId: {
-    type: import_sequelize3.DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: "managers",
-      key: "managerId"
-    },
-    onUpdate: "CASCADE",
-    onDelete: "CASCADE"
-  }
-};
-var getPropertyModel = async (sequelize3) => {
-  if (sequelize3) {
-    Properties.init(schema2, { sequelize: sequelize3, modelName: "properties", timestamps: false });
-    await Properties.sync();
-  }
-  return Properties;
-};
-
-// src/handlers/insertProperty.ts
+// src/handlers/getAllManagers.ts
 var sequelize2 = null;
-var Properties2 = null;
-var insertProperty_default = async (event) => {
+var Managers2 = null;
+var handler = async (event) => {
   if (!sequelize2) {
     sequelize2 = await connectToDb();
-    await getManagerModel(sequelize2);
-    Properties2 = await getPropertyModel(sequelize2);
-  }
-  const body = JSON.parse(event.body ?? "{}");
-  if (!body.managerId || !body.name || !body.address || !body.imgUrl) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: "Missing required fields." })
-    };
+    Managers2 = await getManagerModel(sequelize2);
   }
   try {
-    const createdProperty = await Properties2.create(body, { returning: true });
+    const managers = await Managers2.findAll();
     return {
-      statusCode: 201,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(createdProperty.toJSON())
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(managers.map((m) => m.toJSON()))
     };
-  } catch (err) {
+  } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to insert property", details: err.message })
+      body: JSON.stringify({
+        message: "Failed to fetch managers",
+        error: error.message
+      })
     };
   }
 };
-//# sourceMappingURL=insertProperty.js.map
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  handler
+});
+//# sourceMappingURL=getAllManagers.js.map
