@@ -1,63 +1,42 @@
-import { APIGatewayProxyHandler } from "aws-lambda";
 import { connectToDb } from "../db/connection";
-import { getManagerModel } from "../db/models/Manager";
+import { getManagerModel } from "../db/models/manager";
+import type { IManager } from "../db/models/manager";
+import type { Sequelize } from "sequelize";
+import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 
+let sequelize: Sequelize | null = null;
+let Manager: IManager | null = null;
+
+// CORS headers reused for all responses (still useful even in v2)
 const corsHeaders = {
+  "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Content-Type": "application/json"
 };
 
-export const handler: APIGatewayProxyHandler = async (event) => {
-  // Handle preflight request
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: ""
-    };
-  }
-
+export default async (
+  event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
   try {
-    const body = JSON.parse(event.body || "{}");
-    const { cognitoId, name, email, phoneNumber } = body;
-
-    if (!cognitoId || !name || !email || !phoneNumber) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ message: "Missing required fields." })
-      };
+    if (!sequelize) {
+      sequelize = await connectToDb();
+      Manager = await getManagerModel(sequelize);
     }
 
-    const sequelize = await connectToDb();
-    const Manager = await getManagerModel(sequelize);
+    const body = event.body ? JSON.parse(event.body) : {};
 
-    const existing = await Manager.findOne({ where: { cognitoId } });
-    if (existing) {
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify(existing.toJSON())
-      };
-    }
-
-    const created = await Manager.create({ cognitoId, name, email, phoneNumber });
+    const createdManager = await Manager.create(body, { returning: true });
 
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(created.toJSON())
+      body: JSON.stringify(createdManager.toJSON()),
     };
-  } catch (error: any) {
+  } catch (error) {
+    console.error("Failed to create manager:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({
-        message: "Error creating manager",
-        error: error.message
-      })
+      body: JSON.stringify({ error: "Failed to create manager" }),
     };
   }
 };

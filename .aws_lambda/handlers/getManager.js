@@ -19,7 +19,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/handlers/getManager.ts
 var getManager_exports = {};
 __export(getManager_exports, {
-  handler: () => handler
+  default: () => getManager_default
 });
 module.exports = __toCommonJS(getManager_exports);
 
@@ -51,26 +51,20 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/Manager.ts
+// src/db/models/manager.ts
 var import_sequelize2 = require("sequelize");
 var Manager = class extends import_sequelize2.Model {
-  id;
-  cognitoId;
-  name;
-  email;
-  phoneNumber;
 };
 var schema = {
   id: {
     type: import_sequelize2.DataTypes.INTEGER,
-    autoIncrement: true,
     primaryKey: true,
-    allowNull: false
+    autoIncrement: true
   },
   cognitoId: {
     type: import_sequelize2.DataTypes.STRING,
-    unique: true,
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
   name: {
     type: import_sequelize2.DataTypes.STRING,
@@ -85,13 +79,13 @@ var schema = {
     allowNull: false
   }
 };
-var getManagerModel = async (sequelize2) => {
-  if (sequelize2) {
+var getManagerModel = async (sequelize3) => {
+  if (sequelize3) {
     Manager.init(schema, {
-      sequelize: sequelize2,
-      modelName: "managers",
-      tableName: "managers",
+      sequelize: sequelize3,
+      modelName: "manager",
       timestamps: false
+      // Disable createdAt and updatedAt
     });
     await Manager.sync();
   }
@@ -99,57 +93,48 @@ var getManagerModel = async (sequelize2) => {
 };
 
 // src/handlers/getManager.ts
+var sequelize2 = null;
+var Manager2 = null;
 var corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "*",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*"
+  // or use your frontend domain
 };
-var handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: ""
-    };
-  }
+var getManager_default = async (event) => {
   try {
+    if (!sequelize2) {
+      sequelize2 = await connectToDb();
+      Manager2 = await getManagerModel(sequelize2);
+    }
     const cognitoId = event.pathParameters?.cognitoId;
-    console.log("\u{1F9E0} [Lambda] Incoming Cognito ID:", cognitoId);
+    console.log("Cognito ID received:", cognitoId);
     if (!cognitoId) {
-      console.log("\u{1F6AB} Manager not found for ID:", cognitoId);
       return {
         statusCode: 400,
         headers: corsHeaders,
-        body: JSON.stringify({ message: "Missing cognitoId in path." })
+        body: JSON.stringify({ error: "Missing cognitoId in path" })
       };
     }
-    const sequelize2 = await connectToDb();
-    const Manager2 = await getManagerModel(sequelize2);
     const manager = await Manager2.findOne({ where: { cognitoId } });
     if (!manager) {
       return {
         statusCode: 404,
         headers: corsHeaders,
-        body: JSON.stringify({ message: "Manager not found." })
+        body: JSON.stringify({ error: "Manager not found" })
       };
     }
-    console.log("\u2705 Found Manager:", manager.toJSON());
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify(manager.toJSON())
     };
   } catch (error) {
-    console.error("\u274C Error fetching manager:", error);
+    console.error("Failed to get manager:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ message: `Error fetching manager: ${error.message}` })
+      body: JSON.stringify({ error: "Failed to get manager" })
     };
   }
 };
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  handler
-});
 //# sourceMappingURL=getManager.js.map
