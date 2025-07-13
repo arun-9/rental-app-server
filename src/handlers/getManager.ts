@@ -1,39 +1,39 @@
-import { APIGatewayProxyHandler } from "aws-lambda";
 import { connectToDb } from "../db/connection";
-import { getManagerModel } from "../db/models/Manager";
+import { getManagerModel } from "../db/models/manager";
+import type { IManager } from "../db/models/manager";
+import type { Sequelize } from "sequelize";
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from "aws-lambda";
+
+let sequelize: Sequelize | null = null;
+let Manager: IManager | null = null;
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "*",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*", // or use your frontend domain
 };
 
-export const handler: APIGatewayProxyHandler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: "",
-    };
-  }
-
+export default async (
+  event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
   try {
-    const cognitoId = event.pathParameters?.cognitoId;
-    
-    // ✅ Log for debugging
-    console.log("🧠 [Lambda] Incoming Cognito ID:", cognitoId);
+    if (!sequelize) {
+      sequelize = await connectToDb();
+      Manager = await getManagerModel(sequelize);
+    }
 
+    const cognitoId = event.pathParameters?.cognitoId;
+    // ✅ Add this log immediately after fetching path parameter
+    console.log("Cognito ID received:", cognitoId);
     if (!cognitoId) {
-       console.log("🚫 Manager not found for ID:", cognitoId); // extra debug
       return {
         statusCode: 400,
         headers: corsHeaders,
-        body: JSON.stringify({ message: "Missing cognitoId in path." }),
+        body: JSON.stringify({ error: "Missing cognitoId in path" }),
       };
     }
-
-    const sequelize = await connectToDb();
-    const Manager = await getManagerModel(sequelize);
 
     const manager = await Manager.findOne({ where: { cognitoId } });
 
@@ -41,23 +41,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return {
         statusCode: 404,
         headers: corsHeaders,
-        body: JSON.stringify({ message: "Manager not found." }),
+        body: JSON.stringify({ error: "Manager not found" }),
       };
     }
-    // ✅ Log found manager (optional)
-    console.log("✅ Found Manager:", manager.toJSON());
 
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify(manager.toJSON()),
     };
-  } catch (error: any) {
-    console.error("❌ Error fetching manager:", error);
+  } catch (error) {
+    console.error("Failed to get manager:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ message: `Error fetching manager: ${error.message}` }),
+      body: JSON.stringify({ error: "Failed to get manager" }),
     };
   }
 };

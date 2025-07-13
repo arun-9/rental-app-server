@@ -12,13 +12,11 @@ custom:
   timeout: 10
   serverless-aws-lambda:
     configPath: ./slsconfig.ts
-
-  local:
+  local: # docker-compose.yml
     DB_HOST: localhost:5432
     DB_NAME: myDb
     DB_USER: postgres
     DB_PASSWORD: 5678
-
   prod:
     DB_HOST: prodhost:5432
     DB_NAME: myProdDb
@@ -28,40 +26,22 @@ custom:
 provider:
   name: aws
   runtime: nodejs18.x
-  region: eu-west-3
-  timeout: ${self:custom.timeout}
   versionFunctions: false
+  region: eu-west-3
   deploymentMethod: direct
-
+  timeout: ${self:custom.timeout}
   environment:
     TIMEOUT: ${self:custom.timeout}
-    DB_HOST: ${self:custom.${opt:stage, 'local'}.DB_HOST}
-    DB_NAME: ${self:custom.${opt:stage, 'local'}.DB_NAME}
-    DB_USER: ${self:custom.${opt:stage, 'local'}.DB_USER}
-    DB_PASSWORD: ${self:custom.${opt:stage, 'local'}.DB_PASSWORD}
-
-  httpApi:
-    cors:
-      allowedOrigins:
-        - http://localhost:3001
-      allowedMethods:
-        - GET
-        - POST
-        - PUT
-        - DELETE
-        - OPTIONS
-      allowedHeaders:
-        - Content-Type
-        - Authorization
-      allowCredentials: true
+    DB_HOST: ${self:custom.${opt:stage}.DB_HOST}
+    DB_NAME: ${self:custom.${opt:stage}.DB_NAME}
+    DB_USER: ${self:custom.${opt:stage}.DB_USER}
+    DB_PASSWORD: ${self:custom.${opt:stage}.DB_PASSWORD}
 
 functions:
   createManager:
     handler: src/handlers/createManager.default
     events:
-      - httpApi:
-          method: POST
-          path: /managers
+      - httpApi: POST /managers
 
   getManager:
     handler: src/handlers/getManager.default
