@@ -56,6 +56,7 @@ provider:
       allowCredentials: true
 
 functions:
+  # Manager APIs
   createManager:
     handler: src/handlers/createManager.default
     events:
@@ -69,3 +70,18 @@ functions:
       - httpApi:
           method: GET
           path: /managers/{cognitoId}
+
+  # Tenant APIs
+  createTenant:
+    handler: src/handlers/createTenant.default
+    events:
+      - httpApi:
+          method: POST
+          path: /tenants
+
+  getTenant:
+    handler: src/handlers/getTenant.default
+    events:
+      - httpApi:
+          method: GET
+          path: /tenants/{cognitoId}
