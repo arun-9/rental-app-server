@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getProperty.ts
-var getProperty_exports = {};
-__export(getProperty_exports, {
-  default: () => getProperty_default
+// src/handlers/createProperty.ts
+var createProperty_exports = {};
+__export(createProperty_exports, {
+  default: () => createProperty_default
 });
-module.exports = __toCommonJS(getProperty_exports);
+module.exports = __toCommonJS(createProperty_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -98,33 +98,33 @@ var getPropertyModel = async (sequelize3) => {
   return Property;
 };
 
-// src/handlers/getProperty.ts
+// src/handlers/createProperty.ts
 var sequelize2 = null;
 var Property2 = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-var getProperty_default = async (event) => {
+var createProperty_default = async (event) => {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
       Property2 = await getPropertyModel(sequelize2);
     }
-    const id = event.pathParameters?.id;
-    const result = id ? await Property2.findByPk(id) : await Property2.findAll();
+    const body = event.body ? JSON.parse(event.body) : {};
+    const createdProperty = await Property2.create(body, { returning: true });
     return {
-      statusCode: 200,
+      statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(result)
+      body: JSON.stringify(createdProperty.toJSON())
     };
   } catch (error) {
-    console.error("Failed to fetch property(ies):", error);
+    console.error("Failed to create property:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to fetch property(ies)" })
+      body: JSON.stringify({ error: "Failed to create property" })
     };
   }
 };
-//# sourceMappingURL=getProperty.js.map
+//# sourceMappingURL=createProperty.js.map

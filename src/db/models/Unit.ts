@@ -1,8 +1,8 @@
-// src/db/models/Tenant.ts
+// src/db/models/Unit.ts
 import { Sequelize, Model, DataTypes } from "sequelize";
 import type { ModelAttributes } from "sequelize";
 
-class Tenant extends Model {}
+class Unit extends Model {}
 
 const schema: ModelAttributes = {
   id: {
@@ -10,47 +10,39 @@ const schema: ModelAttributes = {
     primaryKey: true,
     autoIncrement: true,
   },
-  cognitoId: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  name: {
+  unitNumber: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  email: {
-    type: DataTypes.STRING,
+  isVacant: {
+    type: DataTypes.BOOLEAN,
     allowNull: false,
-  },
-  phoneNumber: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    defaultValue: true,
   },
   propertyId: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  unitId: {
+  tenantId: {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
 };
 
-type ITenant = typeof Tenant;
+type IUnit = typeof Unit;
 
-export const getTenantModel = async (sequelize?: Sequelize): Promise<ITenant> => {
+export const getUnitModel = async (sequelize?: Sequelize): Promise<IUnit> => {
   if (sequelize) {
-    Tenant.init(schema, {
+    Unit.init(schema, {
       sequelize,
-      modelName: "tenant",
+      modelName: "unit",
       timestamps: false,
     });
 
-    await Tenant.sync();
+    await Unit.sync();
   }
 
-  return Tenant;
+  return Unit;
 };
 
-export type { ITenant };
+export type { IUnit };

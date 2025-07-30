@@ -1,12 +1,15 @@
-// src/handlers/getTenant.ts
+// src/handlers/getProperty.ts
 import { connectToDb } from "../db/connection";
-import { getTenantModel } from "../db/models/tenant";
-import type { ITenant } from "../db/models/tenant";
+import { getPropertyModel } from "../db/models/Property";
+import type { IProperty } from "../db/models/Property";
 import type { Sequelize } from "sequelize";
-import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from "aws-lambda";
 
 let sequelize: Sequelize | null = null;
-let Tenant: ITenant | null = null;
+let Property: IProperty | null = null;
 
 const corsHeaders = {
   "Content-Type": "application/json",
@@ -19,13 +22,11 @@ export default async (
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-      Tenant = await getTenantModel(sequelize);
+      Property = await getPropertyModel(sequelize);
     }
 
     const id = event.pathParameters?.id;
-    const result = id
-      ? await Tenant.findByPk(id)
-      : await Tenant.findAll();
+    const result = id ? await Property.findByPk(id) : await Property.findAll();
 
     return {
       statusCode: 200,
@@ -33,11 +34,11 @@ export default async (
       body: JSON.stringify(result),
     };
   } catch (error) {
-    console.error("Failed to fetch tenant(s):", error);
+    console.error("Failed to fetch property(ies):", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to fetch tenant(s)" }),
+      body: JSON.stringify({ error: "Failed to fetch property(ies)" }),
     };
   }
 };

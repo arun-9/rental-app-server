@@ -69,6 +69,9 @@ functions:
     events:
       - httpApi:
           method: GET
+          path: /managers
+      - httpApi:
+          method: GET
           path: /managers/{cognitoId}
 
   # Tenant APIs
@@ -77,11 +80,50 @@ functions:
     events:
       - httpApi:
           method: POST
-          path: /tenants
+          path: /tenant
 
   getTenant:
     handler: src/handlers/getTenant.default
     events:
       - httpApi:
           method: GET
+          path: /tenants
+      - httpApi:
+          method: GET
           path: /tenants/{cognitoId}
+
+  # Property APIs
+  createProperty:
+    handler: src/handlers/createProperty.default
+    events:
+      - httpApi:
+          method: POST
+          path: /property
+
+  getProperty:
+    handler: src/handlers/getProperty.default
+    events:
+      - httpApi:
+          method: GET
+          path: /properties
+      - httpApi:
+          method: GET
+          path: /properties/{id}
+
+  # Unit APIs
+  createUnit:
+    handler: src/handlers/createUnit.default
+    events:
+      - httpApi:
+          method: POST
+          path: /unit
+
+  getUnit:
+    handler: src/handlers/getUnit.default
+    events:
+      - httpApi:
+          method: GET
+          path: /units
+      - httpApi:
+          method: GET
+          path: /units/{id}

@@ -1,12 +1,15 @@
-// src/handlers/createTenant.ts
+// src/handlers/createUnit.ts
 import { connectToDb } from "../db/connection";
-import { getTenantModel } from "../db/models/tenant";
-import type { ITenant } from "../db/models/tenant";
+import { getUnitModel } from "../db/models/Unit";
+import type { IUnit } from "../db/models/Unit";
 import type { Sequelize } from "sequelize";
-import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from "aws-lambda";
 
 let sequelize: Sequelize | null = null;
-let Tenant: ITenant | null = null;
+let Unit: IUnit | null = null;
 
 const corsHeaders = {
   "Content-Type": "application/json",
@@ -19,24 +22,24 @@ export default async (
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-      Tenant = await getTenantModel(sequelize);
+      Unit = await getUnitModel(sequelize);
     }
 
     const body = event.body ? JSON.parse(event.body) : {};
 
-    const createdTenant = await Tenant.create(body, { returning: true });
+    const createdUnit = await Unit.create(body, { returning: true });
 
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(createdTenant.toJSON()),
+      body: JSON.stringify(createdUnit.toJSON()),
     };
   } catch (error) {
-    console.error("Failed to create tenant:", error);
+    console.error("Failed to create unit:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to create tenant" }),
+      body: JSON.stringify({ error: "Failed to create unit" }),
     };
   }
 };

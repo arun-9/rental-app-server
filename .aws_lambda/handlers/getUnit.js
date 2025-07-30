@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getProperty.ts
-var getProperty_exports = {};
-__export(getProperty_exports, {
-  default: () => getProperty_default
+// src/handlers/getUnit.ts
+var getUnit_exports = {};
+__export(getUnit_exports, {
+  default: () => getUnit_default
 });
-module.exports = __toCommonJS(getProperty_exports);
+module.exports = __toCommonJS(getUnit_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -51,9 +51,9 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/Property.ts
+// src/db/models/Unit.ts
 var import_sequelize2 = require("sequelize");
-var Property = class extends import_sequelize2.Model {
+var Unit = class extends import_sequelize2.Model {
 };
 var schema = {
   id: {
@@ -61,70 +61,63 @@ var schema = {
     primaryKey: true,
     autoIncrement: true
   },
-  name: {
+  unitNumber: {
     type: import_sequelize2.DataTypes.STRING,
     allowNull: false
   },
-  address: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
+  isVacant: {
+    type: import_sequelize2.DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true
   },
-  numberOfUnits: {
+  propertyId: {
     type: import_sequelize2.DataTypes.INTEGER,
     allowNull: false
   },
-  numberOfTenants: {
+  tenantId: {
     type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
-  },
-  thumbnail: {
-    type: import_sequelize2.DataTypes.STRING,
     allowNull: true
-  },
-  managerId: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
   }
 };
-var getPropertyModel = async (sequelize3) => {
+var getUnitModel = async (sequelize3) => {
   if (sequelize3) {
-    Property.init(schema, {
+    Unit.init(schema, {
       sequelize: sequelize3,
-      modelName: "property",
+      modelName: "unit",
       timestamps: false
     });
-    await Property.sync();
+    await Unit.sync();
   }
-  return Property;
+  return Unit;
 };
 
-// src/handlers/getProperty.ts
+// src/handlers/getUnit.ts
 var sequelize2 = null;
-var Property2 = null;
+var Unit2 = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-var getProperty_default = async (event) => {
+var getUnit_default = async (event) => {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      Property2 = await getPropertyModel(sequelize2);
+      Unit2 = await getUnitModel(sequelize2);
     }
     const id = event.pathParameters?.id;
-    const result = id ? await Property2.findByPk(id) : await Property2.findAll();
+    const result = id ? await Unit2.findByPk(id) : await Unit2.findAll();
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify(result)
     };
   } catch (error) {
-    console.error("Failed to fetch property(ies):", error);
+    console.error("Failed to fetch unit(s):", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to fetch property(ies)" })
+      body: JSON.stringify({ error: "Failed to fetch unit(s)" })
     };
   }
 };
-//# sourceMappingURL=getProperty.js.map
+//# sourceMappingURL=getUnit.js.map

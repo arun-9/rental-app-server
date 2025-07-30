@@ -1,6 +1,6 @@
 import { connectToDb } from "../db/connection";
-import { getManagerModel } from "../db/models/manager";
-import type { IManager } from "../db/models/manager";
+import { getManagerModel } from "../db/models/Manager"; 
+import type { IManager } from "../db/models/Manager";
 import type { Sequelize } from "sequelize";
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 

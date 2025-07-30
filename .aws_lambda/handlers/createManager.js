@@ -51,7 +51,7 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/manager.ts
+// src/db/models/Manager.ts
 var import_sequelize2 = require("sequelize");
 var Manager = class extends import_sequelize2.Model {
 };
