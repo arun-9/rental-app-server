@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getProperty.ts
-var getProperty_exports = {};
-__export(getProperty_exports, {
-  default: () => getProperty_default
+// src/handlers/getTenant.ts
+var getTenant_exports = {};
+__export(getTenant_exports, {
+  default: () => getTenant_default
 });
-module.exports = __toCommonJS(getProperty_exports);
+module.exports = __toCommonJS(getTenant_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -51,9 +51,9 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/Property.ts
+// src/db/models/tenant.ts
 var import_sequelize2 = require("sequelize");
-var Property = class extends import_sequelize2.Model {
+var Tenant = class extends import_sequelize2.Model {
 };
 var schema = {
   id: {
@@ -61,70 +61,71 @@ var schema = {
     primaryKey: true,
     autoIncrement: true
   },
+  cognitoId: {
+    type: import_sequelize2.DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
   name: {
     type: import_sequelize2.DataTypes.STRING,
     allowNull: false
   },
-  address: {
+  email: {
     type: import_sequelize2.DataTypes.STRING,
     allowNull: false
   },
-  numberOfUnits: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
-  },
-  numberOfTenants: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
-  },
-  thumbnail: {
+  phoneNumber: {
     type: import_sequelize2.DataTypes.STRING,
+    allowNull: false
+  },
+  propertyId: {
+    type: import_sequelize2.DataTypes.INTEGER,
+    allowNull: false
+  },
+  unitId: {
+    type: import_sequelize2.DataTypes.INTEGER,
     allowNull: true
-  },
-  managerId: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
   }
 };
-var getPropertyModel = async (sequelize3) => {
+var getTenantModel = async (sequelize3) => {
   if (sequelize3) {
-    Property.init(schema, {
+    Tenant.init(schema, {
       sequelize: sequelize3,
-      modelName: "property",
+      modelName: "tenant",
       timestamps: false
     });
-    await Property.sync();
+    await Tenant.sync();
   }
-  return Property;
+  return Tenant;
 };
 
-// src/handlers/getProperty.ts
+// src/handlers/getTenant.ts
 var sequelize2 = null;
-var Property2 = null;
+var Tenant2 = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-var getProperty_default = async (event) => {
+var getTenant_default = async (event) => {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      Property2 = await getPropertyModel(sequelize2);
+      Tenant2 = await getTenantModel(sequelize2);
     }
     const id = event.pathParameters?.id;
-    const result = id ? await Property2.findByPk(id) : await Property2.findAll();
+    const result = id ? await Tenant2.findByPk(id) : await Tenant2.findAll();
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify(result)
     };
   } catch (error) {
-    console.error("Failed to fetch property(ies):", error);
+    console.error("Failed to fetch tenant(s):", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to fetch property(ies)" })
+      body: JSON.stringify({ error: "Failed to fetch tenant(s)" })
     };
   }
 };
-//# sourceMappingURL=getProperty.js.map
+//# sourceMappingURL=getTenant.js.map

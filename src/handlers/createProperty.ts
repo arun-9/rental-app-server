@@ -1,12 +1,15 @@
-// src/handlers/createTenant.ts
+// src/handlers/createProperty.ts
 import { connectToDb } from "../db/connection";
-import { getTenantModel } from "../db/models/tenant";
-import type { ITenant } from "../db/models/tenant";
+import { getPropertyModel } from "../db/models/Property";
+import type { IProperty } from "../db/models/Property";
 import type { Sequelize } from "sequelize";
-import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from "aws-lambda";
 
 let sequelize: Sequelize | null = null;
-let Tenant: ITenant | null = null;
+let Property: IProperty | null = null;
 
 const corsHeaders = {
   "Content-Type": "application/json",
@@ -19,24 +22,24 @@ export default async (
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-      Tenant = await getTenantModel(sequelize);
+      Property = await getPropertyModel(sequelize);
     }
 
     const body = event.body ? JSON.parse(event.body) : {};
 
-    const createdTenant = await Tenant.create(body, { returning: true });
+    const createdProperty = await Property.create(body, { returning: true });
 
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(createdTenant.toJSON()),
+      body: JSON.stringify(createdProperty.toJSON()),
     };
   } catch (error) {
-    console.error("Failed to create tenant:", error);
+    console.error("Failed to create property:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to create tenant" }),
+      body: JSON.stringify({ error: "Failed to create property" }),
     };
   }
 };

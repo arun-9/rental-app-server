@@ -51,7 +51,7 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/manager.ts
+// src/db/models/Manager.ts
 var import_sequelize2 = require("sequelize");
 var Manager = class extends import_sequelize2.Model {
 };
@@ -98,7 +98,6 @@ var Manager2 = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
-  // or use your frontend domain
 };
 var getManager_default = async (event) => {
   try {
@@ -107,33 +106,18 @@ var getManager_default = async (event) => {
       Manager2 = await getManagerModel(sequelize2);
     }
     const cognitoId = event.pathParameters?.cognitoId;
-    console.log("Cognito ID received:", cognitoId);
-    if (!cognitoId) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: "Missing cognitoId in path" })
-      };
-    }
-    const manager = await Manager2.findOne({ where: { cognitoId } });
-    if (!manager) {
-      return {
-        statusCode: 404,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: "Manager not found" })
-      };
-    }
+    const result = cognitoId ? await Manager2.findOne({ where: { cognitoId } }) : await Manager2.findAll();
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify(manager.toJSON())
+      body: JSON.stringify(result)
     };
   } catch (error) {
-    console.error("Failed to get manager:", error);
+    console.error("Failed to fetch manager(s):", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to get manager" })
+      body: JSON.stringify({ error: "Failed to fetch manager(s)" })
     };
   }
 };
