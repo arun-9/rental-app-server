@@ -87,13 +87,33 @@ var schema = {
     allowNull: true
   }
 };
-var getTenantModel = async (sequelize3) => {
+var getTenantModel = async (sequelize3, PropertyModel, UnitModel) => {
   if (sequelize3) {
     Tenant.init(schema, {
       sequelize: sequelize3,
       modelName: "tenant",
       timestamps: false
     });
+    if (PropertyModel) {
+      Tenant.belongsTo(PropertyModel, {
+        foreignKey: "propertyId",
+        as: "property"
+      });
+      PropertyModel.hasMany(Tenant, {
+        foreignKey: "propertyId",
+        as: "tenants"
+      });
+    }
+    if (UnitModel) {
+      Tenant.belongsTo(UnitModel, {
+        foreignKey: "unitId",
+        as: "unit"
+      });
+      UnitModel.hasOne(Tenant, {
+        foreignKey: "unitId",
+        as: "tenant"
+      });
+    }
     await Tenant.sync();
   }
   return Tenant;

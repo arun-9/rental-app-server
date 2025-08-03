@@ -83,16 +83,31 @@ var schema = {
   },
   managerId: {
     type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: "managers",
+      // must match the table name
+      key: "id"
+    }
   }
 };
-var getPropertyModel = async (sequelize3) => {
+var getPropertyModel = async (sequelize3, ManagerModel) => {
   if (sequelize3) {
     Property.init(schema, {
       sequelize: sequelize3,
       modelName: "property",
       timestamps: false
     });
+    if (ManagerModel) {
+      Property.belongsTo(ManagerModel, {
+        foreignKey: "managerId",
+        as: "manager"
+      });
+      ManagerModel.hasMany(Property, {
+        foreignKey: "managerId",
+        as: "properties"
+      });
+    }
     await Property.sync();
   }
   return Property;
