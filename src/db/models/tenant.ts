@@ -1,81 +1,103 @@
 // src/db/models/Tenant.ts
-import { Sequelize, Model, DataTypes } from "sequelize";
-import type { ModelAttributes } from "sequelize";
-import type { IProperty } from "./Property";
-import type { IUnit } from "./Unit";
+import {
+  Sequelize,
+  Model,
+  DataTypes,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional,
+  ForeignKey
+} from "sequelize";
 
-class Tenant extends Model {}
+import type { Property } from "./Property";
+import type { Unit } from "./Unit";
 
-const schema: ModelAttributes = {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  cognitoId: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  phoneNumber: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  propertyId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  unitId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
-};
+// 1. Typed Tenant model class
+class Tenant extends Model<
+  InferAttributes<Tenant>,
+  InferCreationAttributes<Tenant>
+> {
+  declare id: CreationOptional<number>;
+  declare cognitoId: string;
+  declare name: string;
+  declare email: string;
+  declare phoneNumber: string;
 
-type ITenant = typeof Tenant;
+  declare propertyId: ForeignKey<Property["id"]>;
+  declare unitId: ForeignKey<Unit["id"]> | null;
 
+  // Optional association references
+  declare property?: Property;
+  declare unit?: Unit;
+}
+
+// 2. Init function with associations
 export const getTenantModel = async (
   sequelize?: Sequelize,
-  PropertyModel?: IProperty,
-  UnitModel?: IUnit
-): Promise<ITenant> => {
+  PropertyModel?: typeof Property,
+  UnitModel?: typeof Unit
+): Promise<typeof Tenant> => {
   if (sequelize) {
-    Tenant.init(schema, {
-      sequelize,
-      modelName: "tenant",
-      timestamps: false,
-    });
+    Tenant.init(
+      {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        cognitoId: {
+          type: DataTypes.STRING,
+          allowNull: false,
+          unique: true
+        },
+        name: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        email: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        phoneNumber: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        propertyId: {
+          type: DataTypes.INTEGER,
+          allowNull: false
+        },
+        unitId: {
+          type: DataTypes.INTEGER,
+          allowNull: true
+        }
+      },
+      {
+        sequelize,
+        modelName: "tenant",
+        timestamps: false
+      }
+    );
 
-    // Relationship: Tenant belongs to Property
+    // Associations
     if (PropertyModel) {
       Tenant.belongsTo(PropertyModel, {
         foreignKey: "propertyId",
-        as: "property",
+        as: "property"
       });
-
       PropertyModel.hasMany(Tenant, {
         foreignKey: "propertyId",
-        as: "tenants",
+        as: "tenants"
       });
     }
 
-    // Relationship: Tenant belongs to Unit
     if (UnitModel) {
       Tenant.belongsTo(UnitModel, {
         foreignKey: "unitId",
-        as: "unit",
+        as: "unit"
       });
-
       UnitModel.hasOne(Tenant, {
         foreignKey: "unitId",
-        as: "tenant",
+        as: "tenant"
       });
     }
 
@@ -85,4 +107,6 @@ export const getTenantModel = async (
   return Tenant;
 };
 
-export type { ITenant };
+// 3. Export class and type
+export { Tenant };
+export type ITenant = InferAttributes<Tenant>;

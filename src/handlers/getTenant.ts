@@ -1,31 +1,37 @@
 // src/handlers/getTenant.ts
 import { connectToDb } from "../db/connection";
-import { getTenantModel } from "../db/models/tenant";
-import type { ITenant } from "../db/models/tenant";
+import { getTenantModel, Tenant } from "../db/models/tenant"; // Capitalized 'Tenant'
 import type { Sequelize } from "sequelize";
-import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from "aws-lambda";
 
 let sequelize: Sequelize | null = null;
-let Tenant: ITenant | null = null;
+let TenantModel: typeof Tenant | null = null;
 
 const corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
 };
 
-export default async (
+export default async function handler(
   event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> => {
+): Promise<APIGatewayProxyResultV2> {
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-      Tenant = await getTenantModel(sequelize);
+      TenantModel = await getTenantModel(sequelize);
+    }
+
+    if (!TenantModel) {
+      throw new Error("Tenant model not initialized");
     }
 
     const id = event.pathParameters?.id;
     const result = id
-      ? await Tenant.findByPk(id)
-      : await Tenant.findAll();
+      ? await TenantModel.findByPk(id)
+      : await TenantModel.findAll();
 
     return {
       statusCode: 200,
@@ -40,4 +46,4 @@ export default async (
       body: JSON.stringify({ error: "Failed to fetch tenant(s)" }),
     };
   }
-};
+}

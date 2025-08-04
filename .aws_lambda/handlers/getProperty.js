@@ -19,7 +19,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/handlers/getProperty.ts
 var getProperty_exports = {};
 __export(getProperty_exports, {
-  default: () => getProperty_default
+  default: () => handler
 });
 module.exports = __toCommonJS(getProperty_exports);
 
@@ -55,49 +55,50 @@ var connectToDb = async () => {
 var import_sequelize2 = require("sequelize");
 var Property = class extends import_sequelize2.Model {
 };
-var schema = {
-  id: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  name: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  address: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  numberOfUnits: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
-  },
-  numberOfTenants: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
-  },
-  thumbnail: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: true
-  },
-  managerId: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: "managers",
-      // must match the table name
-      key: "id"
-    }
-  }
-};
 var getPropertyModel = async (sequelize3, ManagerModel) => {
   if (sequelize3) {
-    Property.init(schema, {
-      sequelize: sequelize3,
-      modelName: "property",
-      timestamps: false
-    });
+    Property.init(
+      {
+        id: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        name: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        address: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        numberOfUnits: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false
+        },
+        numberOfTenants: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false
+        },
+        thumbnail: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: {
+            model: "managers",
+            key: "id"
+          }
+        }
+      },
+      {
+        sequelize: sequelize3,
+        modelName: "property",
+        timestamps: false
+      }
+    );
     if (ManagerModel) {
       Property.belongsTo(ManagerModel, {
         foreignKey: "managerId",
@@ -115,19 +116,22 @@ var getPropertyModel = async (sequelize3, ManagerModel) => {
 
 // src/handlers/getProperty.ts
 var sequelize2 = null;
-var Property2 = null;
+var PropertyModel = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-var getProperty_default = async (event) => {
+async function handler(event) {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      Property2 = await getPropertyModel(sequelize2);
+      PropertyModel = await getPropertyModel(sequelize2);
+    }
+    if (!PropertyModel) {
+      throw new Error("Property model not initialized");
     }
     const id = event.pathParameters?.id;
-    const result = id ? await Property2.findByPk(id) : await Property2.findAll();
+    const result = id ? await PropertyModel.findByPk(id) : await PropertyModel.findAll();
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -141,5 +145,5 @@ var getProperty_default = async (event) => {
       body: JSON.stringify({ error: "Failed to fetch property(ies)" })
     };
   }
-};
+}
 //# sourceMappingURL=getProperty.js.map

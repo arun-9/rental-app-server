@@ -1,7 +1,6 @@
 // src/handlers/getManager.ts
 import { connectToDb } from "../db/connection";
-import { getManagerModel } from "../db/models/Manager";
-import type { IManager } from "../db/models/Manager";
+import { getManagerModel, Manager } from "../db/models/Manager";
 import type { Sequelize } from "sequelize";
 import type {
   APIGatewayProxyEventV2,
@@ -9,27 +8,31 @@ import type {
 } from "aws-lambda";
 
 let sequelize: Sequelize | null = null;
-let Manager: IManager | null = null;
+let ManagerModel: typeof Manager | null = null;
 
 const corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
 };
 
-export default async (
+export default async function handler(
   event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> => {
+): Promise<APIGatewayProxyResultV2> {
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-      Manager = await getManagerModel(sequelize);
+      ManagerModel = await getManagerModel(sequelize);
+    }
+
+    if (!ManagerModel) {
+      throw new Error("Manager model not initialized");
     }
 
     const cognitoId = event.pathParameters?.cognitoId;
 
     const result = cognitoId
-      ? await Manager.findOne({ where: { cognitoId } })
-      : await Manager.findAll();
+      ? await ManagerModel.findOne({ where: { cognitoId } })
+      : await ManagerModel.findAll();
 
     return {
       statusCode: 200,
@@ -44,4 +47,4 @@ export default async (
       body: JSON.stringify({ error: "Failed to fetch manager(s)" }),
     };
   }
-};
+}

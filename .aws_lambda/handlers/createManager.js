@@ -19,7 +19,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/handlers/createManager.ts
 var createManager_exports = {};
 __export(createManager_exports, {
-  default: () => createManager_default
+  default: () => handler
 });
 module.exports = __toCommonJS(createManager_exports);
 
@@ -55,38 +55,39 @@ var connectToDb = async () => {
 var import_sequelize2 = require("sequelize");
 var Manager = class extends import_sequelize2.Model {
 };
-var schema = {
-  id: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  cognitoId: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  name: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  email: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  phoneNumber: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  }
-};
 var getManagerModel = async (sequelize3) => {
   if (sequelize3) {
-    Manager.init(schema, {
-      sequelize: sequelize3,
-      modelName: "manager",
-      timestamps: false
-      // Disable createdAt and updatedAt
-    });
+    Manager.init(
+      {
+        id: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        cognitoId: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false,
+          unique: true
+        },
+        name: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        email: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        phoneNumber: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        }
+      },
+      {
+        sequelize: sequelize3,
+        modelName: "manager",
+        timestamps: false
+      }
+    );
     await Manager.sync();
   }
   return Manager;
@@ -94,19 +95,20 @@ var getManagerModel = async (sequelize3) => {
 
 // src/handlers/createManager.ts
 var sequelize2 = null;
-var Manager2 = null;
+var ManagerModel = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-var createManager_default = async (event) => {
+async function handler(event) {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      Manager2 = await getManagerModel(sequelize2);
+      ManagerModel = await getManagerModel(sequelize2);
     }
+    if (!ManagerModel) throw new Error("Manager model not initialized");
     const body = event.body ? JSON.parse(event.body) : {};
-    const createdManager = await Manager2.create(body, { returning: true });
+    const createdManager = await ManagerModel.create(body);
     return {
       statusCode: 201,
       headers: corsHeaders,
@@ -120,5 +122,5 @@ var createManager_default = async (event) => {
       body: JSON.stringify({ error: "Failed to create manager" })
     };
   }
-};
+}
 //# sourceMappingURL=createManager.js.map

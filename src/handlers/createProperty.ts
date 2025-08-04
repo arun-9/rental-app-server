@@ -1,33 +1,38 @@
 // src/handlers/createProperty.ts
 import { connectToDb } from "../db/connection";
-import { getPropertyModel } from "../db/models/Property";
-import type { IProperty } from "../db/models/Property";
+import { getPropertyModel, Property } from "../db/models/Property";
+import { getManagerModel } from "../db/models/Manager"; // Needed for associations
+
 import type { Sequelize } from "sequelize";
 import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyResultV2,
 } from "aws-lambda";
 
+// Singleton cache for Sequelize and models
 let sequelize: Sequelize | null = null;
-let Property: IProperty | null = null;
+let PropertyModel: typeof Property | null = null;
 
 const corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
 };
 
-export default async (
+export default async function handler(
   event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> => {
+): Promise<APIGatewayProxyResultV2> {
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-      Property = await getPropertyModel(sequelize);
+      const ManagerModel = await getManagerModel(sequelize);
+      PropertyModel = await getPropertyModel(sequelize, ManagerModel);
     }
+
+    if (!PropertyModel) throw new Error("Property model not initialized");
 
     const body = event.body ? JSON.parse(event.body) : {};
 
-    const createdProperty = await Property.create(body, { returning: true });
+    const createdProperty = await PropertyModel.create(body);
 
     return {
       statusCode: 201,
@@ -42,4 +47,4 @@ export default async (
       body: JSON.stringify({ error: "Failed to create property" }),
     };
   }
-};
+}

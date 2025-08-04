@@ -1,52 +1,66 @@
-import { Sequelize, Model, DataTypes } from "sequelize";
-import type { ModelAttributes } from "sequelize";
+// src/db/models/Manager.ts
+import {
+  Sequelize,
+  Model,
+  DataTypes,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional
+} from "sequelize";
 
-// 1. Create the class
-class Manager extends Model {}
+// 1. Strongly typed Manager class
+class Manager extends Model<
+  InferAttributes<Manager>,
+  InferCreationAttributes<Manager>
+> {
+  declare id: CreationOptional<number>;
+  declare cognitoId: string;
+  declare name: string;
+  declare email: string;
+  declare phoneNumber: string;
+}
 
-// 2. Define the schema
-const schema: ModelAttributes = {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  cognitoId: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  phoneNumber: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-};
-
-// 3. Type alias for the class
-type IManager = typeof Manager;
-
-// 4. Initialization function
-export const getManagerModel = async (sequelize?: Sequelize): Promise<IManager> => {
+// 2. Schema is now optional, since Model class already declares fields
+export const getManagerModel = async (sequelize?: Sequelize) => {
   if (sequelize) {
-    Manager.init(schema, {
-      sequelize,
-      modelName: "manager",
-      timestamps: false, // Disable createdAt and updatedAt
-    });
+    Manager.init(
+      {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        cognitoId: {
+          type: DataTypes.STRING,
+          allowNull: false,
+          unique: true
+        },
+        name: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        email: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        phoneNumber: {
+          type: DataTypes.STRING,
+          allowNull: false
+        }
+      },
+      {
+        sequelize,
+        modelName: "manager",
+        timestamps: false
+      }
+    );
 
-    await Manager.sync(); // Ensure the table is created
+    await Manager.sync();
   }
 
   return Manager;
 };
 
-// 5. Export types
-export type { IManager };
+// 3. Type exports
+export { Manager }; // ← class itself
+export type IManager = InferAttributes<Manager>;

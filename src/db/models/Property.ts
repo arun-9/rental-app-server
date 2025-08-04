@@ -1,69 +1,90 @@
 // src/db/models/Property.ts
-import { Sequelize, Model, DataTypes } from "sequelize";
-import type { ModelAttributes } from "sequelize";
-import type { IManager } from "./Manager"; // Import the Manager type
+import {
+  Sequelize,
+  Model,
+  DataTypes,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional,
+  ForeignKey
+} from "sequelize";
+import type { Manager } from "./Manager";
 
-class Property extends Model {}
+// 1. Typed Property class
+class Property extends Model<
+  InferAttributes<Property>,
+  InferCreationAttributes<Property>
+> {
+  declare id: CreationOptional<number>;
+  declare name: string;
+  declare address: string;
+  declare numberOfUnits: number;
+  declare numberOfTenants: number;
+  declare thumbnail: string | null;
 
-const schema: ModelAttributes = {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  address: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  numberOfUnits: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  numberOfTenants: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  thumbnail: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  managerId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: "managers", // must match the table name
-      key: "id",
-    },
-  },
-};
+  // Foreign key and association
+  declare managerId: ForeignKey<Manager["id"]>;
+  declare manager?: Manager;
+}
 
-type IProperty = typeof Property;
-
+// 2. Initialization function
 export const getPropertyModel = async (
   sequelize?: Sequelize,
-  ManagerModel?: IManager
-): Promise<IProperty> => {
+  ManagerModel?: typeof Manager
+): Promise<typeof Property> => {
   if (sequelize) {
-    Property.init(schema, {
-      sequelize,
-      modelName: "property",
-      timestamps: false,
-    });
+    Property.init(
+      {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        name: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        address: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        numberOfUnits: {
+          type: DataTypes.INTEGER,
+          allowNull: false
+        },
+        numberOfTenants: {
+          type: DataTypes.INTEGER,
+          allowNull: false
+        },
+        thumbnail: {
+          type: DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          references: {
+            model: "managers",
+            key: "id"
+          }
+        }
+      },
+      {
+        sequelize,
+        modelName: "property",
+        timestamps: false
+      }
+    );
 
-    // Add association
     if (ManagerModel) {
       Property.belongsTo(ManagerModel, {
         foreignKey: "managerId",
-        as: "manager",
+        as: "manager"
       });
 
       ManagerModel.hasMany(Property, {
         foreignKey: "managerId",
-        as: "properties",
+        as: "properties"
       });
     }
 
@@ -73,4 +94,6 @@ export const getPropertyModel = async (
   return Property;
 };
 
-export type { IProperty };
+// 3. Type exports
+export { Property };
+export type IProperty = InferAttributes<Property>;
