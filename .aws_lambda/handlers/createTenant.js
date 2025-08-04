@@ -247,6 +247,7 @@ var getUnitModel = async (sequelize3, PropertyModel, TenantModel2) => {
 };
 
 // src/handlers/createTenant.ts
+var import_sequelize5 = require("sequelize");
 var sequelize2 = null;
 var TenantModel = null;
 var corsHeaders = {
@@ -271,6 +272,34 @@ async function handler(event) {
     };
   } catch (error) {
     console.error("Failed to create tenant:", error);
+    if (error instanceof import_sequelize5.UniqueConstraintError) {
+      return {
+        statusCode: 409,
+        // Conflict
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: "Tenant already exists with the provided unique field.",
+          details: error.errors.map((e) => ({
+            field: e.path,
+            message: e.message
+          }))
+        })
+      };
+    }
+    if (error instanceof import_sequelize5.ValidationError) {
+      return {
+        statusCode: 400,
+        // Bad request
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: "Validation failed.",
+          details: error.errors.map((e) => ({
+            field: e.path,
+            message: e.message
+          }))
+        })
+      };
+    }
     return {
       statusCode: 500,
       headers: corsHeaders,

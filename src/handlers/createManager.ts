@@ -1,12 +1,12 @@
 import { connectToDb } from "../db/connection";
-import { getManagerModel, Manager } from "../db/models/Manager"; 
+import { getManagerModel, Manager } from "../db/models/Manager";
+import { ValidationError, UniqueConstraintError } from "sequelize";
 import type { Sequelize } from "sequelize";
 import type {
   APIGatewayProxyEventV2,
-  APIGatewayProxyResultV2
+  APIGatewayProxyResultV2,
 } from "aws-lambda";
 
-// Singleton for connection
 let sequelize: Sequelize | null = null;
 let ManagerModel: typeof Manager | null = null;
 
@@ -19,7 +19,6 @@ export default async function handler(
   event: APIGatewayProxyEventV2
 ): Promise<APIGatewayProxyResultV2> {
   try {
-    // Initialize Sequelize + Model only once
     if (!sequelize) {
       sequelize = await connectToDb();
       ManagerModel = await getManagerModel(sequelize);
@@ -28,6 +27,7 @@ export default async function handler(
     if (!ManagerModel) throw new Error("Manager model not initialized");
 
     const body = event.body ? JSON.parse(event.body) : {};
+
     const createdManager = await ManagerModel.create(body);
 
     return {
@@ -35,8 +35,27 @@ export default async function handler(
       headers: corsHeaders,
       body: JSON.stringify(createdManager.toJSON()),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to create manager:", error);
+
+    if (error instanceof UniqueConstraintError) {
+      return {
+        statusCode: 409, // Conflict
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: "Manager with given unique field already exists.",
+        }),
+      };
+    }
+
+    if (error instanceof ValidationError) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: error.message }),
+      };
+    }
+
     return {
       statusCode: 500,
       headers: corsHeaders,

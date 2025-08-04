@@ -1,10 +1,10 @@
-// src/handlers/createTenant.ts
 import { connectToDb } from "../db/connection";
 import { getTenantModel, Tenant } from "../db/models/tenant";
 import { getPropertyModel } from "../db/models/Property";
 import { getUnitModel } from "../db/models/Unit";
 
-import type { Sequelize } from "sequelize";
+import { UniqueConstraintError, ValidationError, Sequelize } from "sequelize";
+
 import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyResultV2,
@@ -25,11 +25,9 @@ export default async function handler(
     if (!sequelize) {
       sequelize = await connectToDb();
 
-      // First, load required models for associations
+      // Load required models for associations
       const PropertyModel = await getPropertyModel(sequelize);
       const UnitModel = await getUnitModel(sequelize, PropertyModel);
-
-      // Now load the Tenant model with associations
       TenantModel = await getTenantModel(sequelize, PropertyModel, UnitModel);
     }
 
@@ -44,8 +42,37 @@ export default async function handler(
       headers: corsHeaders,
       body: JSON.stringify(createdTenant.toJSON()),
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to create tenant:", error);
+
+    if (error instanceof UniqueConstraintError) {
+      return {
+        statusCode: 409, // Conflict
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: "Tenant already exists with the provided unique field.",
+          details: error.errors.map((e) => ({
+            field: e.path,
+            message: e.message,
+          })),
+        }),
+      };
+    }
+
+    if (error instanceof ValidationError) {
+      return {
+        statusCode: 400, // Bad request
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: "Validation failed.",
+          details: error.errors.map((e) => ({
+            field: e.path,
+            message: e.message,
+          })),
+        }),
+      };
+    }
+
     return {
       statusCode: 500,
       headers: corsHeaders,

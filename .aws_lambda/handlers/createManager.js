@@ -94,6 +94,7 @@ var getManagerModel = async (sequelize3) => {
 };
 
 // src/handlers/createManager.ts
+var import_sequelize3 = require("sequelize");
 var sequelize2 = null;
 var ManagerModel = null;
 var corsHeaders = {
@@ -116,6 +117,23 @@ async function handler(event) {
     };
   } catch (error) {
     console.error("Failed to create manager:", error);
+    if (error instanceof import_sequelize3.UniqueConstraintError) {
+      return {
+        statusCode: 409,
+        // Conflict
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: "Manager with given unique field already exists."
+        })
+      };
+    }
+    if (error instanceof import_sequelize3.ValidationError) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: error.message })
+      };
+    }
     return {
       statusCode: 500,
       headers: corsHeaders,
