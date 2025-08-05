@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/createUnit.ts
-var createUnit_exports = {};
-__export(createUnit_exports, {
+// src/handlers/updateUnit.ts
+var updateUnit_exports = {};
+__export(updateUnit_exports, {
   default: () => handler
 });
-module.exports = __toCommonJS(createUnit_exports);
+module.exports = __toCommonJS(updateUnit_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -256,51 +256,7 @@ var getTenantModel = async (sequelize3, ManagerModel, PropertyModel) => {
   return Tenant;
 };
 
-// src/db/models/Manager.ts
-var import_sequelize5 = require("sequelize");
-var Manager = class extends import_sequelize5.Model {
-};
-var getManagerModel = async (sequelize3) => {
-  if (sequelize3) {
-    Manager.init(
-      {
-        id: {
-          type: import_sequelize5.DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true
-        },
-        cognitoId: {
-          type: import_sequelize5.DataTypes.STRING,
-          allowNull: false,
-          unique: true
-        },
-        name: {
-          type: import_sequelize5.DataTypes.STRING,
-          allowNull: false
-        },
-        email: {
-          type: import_sequelize5.DataTypes.STRING,
-          allowNull: false
-        },
-        phoneNumber: {
-          type: import_sequelize5.DataTypes.STRING,
-          allowNull: false
-        }
-      },
-      {
-        sequelize: sequelize3,
-        modelName: "manager",
-        tableName: "managers",
-        timestamps: false,
-        comment: "Managers who manage properties, tenants, and units"
-      }
-    );
-    await Manager.sync();
-  }
-  return Manager;
-};
-
-// src/handlers/createUnit.ts
+// src/handlers/updateUnit.ts
 var sequelize2 = null;
 var UnitModel = null;
 var corsHeaders = {
@@ -311,49 +267,34 @@ async function handler(event) {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      const ManagerModel = await getManagerModel(sequelize2);
-      const PropertyModel = await getPropertyModel(sequelize2, ManagerModel);
-      const TenantModel = await getTenantModel(
-        sequelize2,
-        ManagerModel,
-        PropertyModel
-      );
-      UnitModel = await getUnitModel(
-        sequelize2,
-        PropertyModel,
-        TenantModel,
-        ManagerModel
-      );
+      const PropertyModel = await getPropertyModel(sequelize2);
+      const TenantModel = await getTenantModel(sequelize2);
+      UnitModel = await getUnitModel(sequelize2, PropertyModel, TenantModel);
     }
     if (!UnitModel) throw new Error("Unit model not initialized");
+    const unitId = event.pathParameters?.id;
     const body = event.body ? JSON.parse(event.body) : {};
-    const { unitNumber, status, propertyId, tenantId, managerId } = body;
-    if (!unitNumber || !status || !propertyId || !managerId) {
+    const unit = await UnitModel.findByPk(unitId);
+    if (!unit) {
       return {
-        statusCode: 400,
+        statusCode: 404,
         headers: corsHeaders,
-        body: JSON.stringify({ error: "Missing required fields" })
+        body: JSON.stringify({ error: "Unit not found" })
       };
     }
-    const unit = await UnitModel.create({
-      unitNumber,
-      status,
-      propertyId,
-      tenantId: tenantId || null,
-      managerId
-    });
+    await unit.update(body);
     return {
-      statusCode: 201,
+      statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify(unit.toJSON())
     };
   } catch (error) {
-    console.error("Create unit error:", error);
+    console.error("Failed to update unit:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to create unit" })
+      body: JSON.stringify({ error: "Failed to update unit" })
     };
   }
 }
-//# sourceMappingURL=createUnit.js.map
+//# sourceMappingURL=updateUnit.js.map

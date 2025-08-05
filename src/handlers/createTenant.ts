@@ -1,10 +1,10 @@
+// src/handlers/createTenant.ts
 import { connectToDb } from "../db/connection";
-import { getTenantModel, Tenant } from "../db/models/tenant";
+import { getTenantModel, Tenant } from "../db/models/Tenant";
+import { getManagerModel } from "../db/models/Manager";
 import { getPropertyModel } from "../db/models/Property";
-import { getUnitModel } from "../db/models/Unit";
 
-import { UniqueConstraintError, ValidationError, Sequelize } from "sequelize";
-
+import type { Sequelize } from "sequelize";
 import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyResultV2,
@@ -24,55 +24,60 @@ export default async function handler(
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-
-      // Load required models for associations
-      const PropertyModel = await getPropertyModel(sequelize);
-      const UnitModel = await getUnitModel(sequelize, PropertyModel);
-      TenantModel = await getTenantModel(sequelize, PropertyModel, UnitModel);
+      const ManagerModel = await getManagerModel(sequelize);
+      const PropertyModel = await getPropertyModel(sequelize, ManagerModel);
+      TenantModel = await getTenantModel(
+        sequelize,
+        ManagerModel,
+        PropertyModel
+      );
     }
 
     if (!TenantModel) throw new Error("Tenant model not initialized");
 
     const body = event.body ? JSON.parse(event.body) : {};
+    const {
+      name,
+      email,
+      phoneNumber,
+      profileImage,
+      propertyId,
+      managerId,
+      cognitoId,
+    } = body;
 
-    const createdTenant = await TenantModel.create(body);
+    if (
+      !name ||
+      !email ||
+      !phoneNumber ||
+      !propertyId ||
+      !managerId ||
+      !cognitoId
+    ) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Missing required fields" }),
+      };
+    }
+
+    const tenant = await TenantModel.create({
+      name,
+      email,
+      phoneNumber,
+      profileImage: profileImage || null,
+      propertyId,
+      managerId,
+      cognitoId,
+    });
 
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(createdTenant.toJSON()),
+      body: JSON.stringify(tenant.toJSON()),
     };
-  } catch (error: any) {
-    console.error("Failed to create tenant:", error);
-
-    if (error instanceof UniqueConstraintError) {
-      return {
-        statusCode: 409, // Conflict
-        headers: corsHeaders,
-        body: JSON.stringify({
-          error: "Tenant already exists with the provided unique field.",
-          details: error.errors.map((e) => ({
-            field: e.path,
-            message: e.message,
-          })),
-        }),
-      };
-    }
-
-    if (error instanceof ValidationError) {
-      return {
-        statusCode: 400, // Bad request
-        headers: corsHeaders,
-        body: JSON.stringify({
-          error: "Validation failed.",
-          details: error.errors.map((e) => ({
-            field: e.path,
-            message: e.message,
-          })),
-        }),
-      };
-    }
-
+  } catch (error) {
+    console.error("Create tenant error:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,

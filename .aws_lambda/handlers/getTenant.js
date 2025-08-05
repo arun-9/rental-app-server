@@ -51,11 +51,11 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/tenant.ts
+// src/db/models/Tenant.ts
 var import_sequelize2 = require("sequelize");
 var Tenant = class extends import_sequelize2.Model {
 };
-var getTenantModel = async (sequelize3, PropertyModel, UnitModel) => {
+var getTenantModel = async (sequelize3, ManagerModel, PropertyModel) => {
   if (sequelize3) {
     Tenant.init(
       {
@@ -81,40 +81,35 @@ var getTenantModel = async (sequelize3, PropertyModel, UnitModel) => {
           type: import_sequelize2.DataTypes.STRING,
           allowNull: false
         },
+        profileImage: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "managers", key: "id" }
+        },
         propertyId: {
           type: import_sequelize2.DataTypes.INTEGER,
-          allowNull: false
-        },
-        unitId: {
-          type: import_sequelize2.DataTypes.INTEGER,
-          allowNull: true
+          allowNull: false,
+          references: { model: "properties", key: "id" }
         }
       },
       {
         sequelize: sequelize3,
         modelName: "tenant",
+        tableName: "tenants",
         timestamps: false
       }
     );
-    if (PropertyModel) {
-      Tenant.belongsTo(PropertyModel, {
-        foreignKey: "propertyId",
-        as: "property"
-      });
-      PropertyModel.hasMany(Tenant, {
-        foreignKey: "propertyId",
-        as: "tenants"
-      });
+    if (ManagerModel) {
+      Tenant.belongsTo(ManagerModel, { foreignKey: "managerId", as: "manager" });
+      ManagerModel.hasMany(Tenant, { foreignKey: "managerId", as: "tenants" });
     }
-    if (UnitModel) {
-      Tenant.belongsTo(UnitModel, {
-        foreignKey: "unitId",
-        as: "unit"
-      });
-      UnitModel.hasOne(Tenant, {
-        foreignKey: "unitId",
-        as: "tenant"
-      });
+    if (PropertyModel) {
+      Tenant.belongsTo(PropertyModel, { foreignKey: "propertyId", as: "property" });
+      PropertyModel.hasMany(Tenant, { foreignKey: "propertyId", as: "tenants" });
     }
     await Tenant.sync();
   }

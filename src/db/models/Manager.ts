@@ -8,7 +8,6 @@ import {
   CreationOptional
 } from "sequelize";
 
-// 1. Strongly typed Manager class
 class Manager extends Model<
   InferAttributes<Manager>,
   InferCreationAttributes<Manager>
@@ -20,8 +19,9 @@ class Manager extends Model<
   declare phoneNumber: string;
 }
 
-// 2. Schema is now optional, since Model class already declares fields
-export const getManagerModel = async (sequelize?: Sequelize) => {
+export const getManagerModel = async (
+  sequelize?: Sequelize
+): Promise<typeof Manager> => {
   if (sequelize) {
     Manager.init(
       {
@@ -51,7 +51,9 @@ export const getManagerModel = async (sequelize?: Sequelize) => {
       {
         sequelize,
         modelName: "manager",
-        timestamps: false
+        tableName: "managers",
+        timestamps: false,
+        comment: "Managers who manage properties, tenants, and units"
       }
     );
 
@@ -61,6 +63,5 @@ export const getManagerModel = async (sequelize?: Sequelize) => {
   return Manager;
 };
 
-// 3. Type exports
-export { Manager }; // ← class itself
+export { Manager };
 export type IManager = InferAttributes<Manager>;

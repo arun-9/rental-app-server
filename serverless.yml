@@ -74,6 +74,20 @@ functions:
           method: GET
           path: /managers/{cognitoId}
 
+  updateManager:
+    handler: src/handlers/updateManager.default
+    events:
+      - httpApi:
+          method: PUT
+          path: /managers/{id}
+
+  deleteManager:
+    handler: src/handlers/deleteManager.default
+    events:
+      - httpApi:
+          method: DELETE
+          path: /managers/{id}
+
   # Tenant APIs
   createTenant:
     handler: src/handlers/createTenant.default
@@ -90,6 +104,20 @@ functions:
           path: /tenants
       - httpApi:
           method: GET
+          path: /tenants/{cognitoId}
+
+  updateTenant:
+    handler: src/handlers/updateTenant.default
+    events:
+      - httpApi:
+          method: PUT
+          path: /tenants/{cognitoId}
+
+  deleteTenant:
+    handler: src/handlers/deleteTenant.default
+    events:
+      - httpApi:
+          method: DELETE
           path: /tenants/{cognitoId}
 
   # Property APIs
@@ -110,6 +138,20 @@ functions:
           method: GET
           path: /properties/{id}
 
+  updateProperty:
+    handler: src/handlers/updateProperty.default
+    events:
+      - httpApi:
+          method: PUT
+          path: /properties/{id}
+
+  deleteProperty:
+    handler: src/handlers/deleteProperty.default
+    events:
+      - httpApi:
+          method: DELETE
+          path: /properties/{id}
+
   # Unit APIs
   createUnit:
     handler: src/handlers/createUnit.default
@@ -126,4 +168,18 @@ functions:
           path: /units
       - httpApi:
           method: GET
+          path: /units/{id}
+
+  updateUnit:
+    handler: src/handlers/updateUnit.default
+    events:
+      - httpApi:
+          method: PUT
+          path: /units/{id}
+
+  deleteUnit:
+    handler: src/handlers/deleteUnit.default
+    events:
+      - httpApi:
+          method: DELETE
           path: /units/{id}

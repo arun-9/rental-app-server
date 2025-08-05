@@ -10,9 +10,8 @@ import {
 } from "sequelize";
 
 import type { Property } from "./Property";
-import type { Unit } from "./Unit";
+import type { Manager } from "./Manager";
 
-// 1. Typed Tenant model class
 class Tenant extends Model<
   InferAttributes<Tenant>,
   InferCreationAttributes<Tenant>
@@ -22,20 +21,19 @@ class Tenant extends Model<
   declare name: string;
   declare email: string;
   declare phoneNumber: string;
+  declare profileImage: string | null;
 
+  declare managerId: ForeignKey<Manager["id"]>;
   declare propertyId: ForeignKey<Property["id"]>;
-  declare unitId: ForeignKey<Unit["id"]> | null;
 
-  // Optional association references
+  declare manager?: Manager;
   declare property?: Property;
-  declare unit?: Unit;
 }
 
-// 2. Init function with associations
 export const getTenantModel = async (
   sequelize?: Sequelize,
-  PropertyModel?: typeof Property,
-  UnitModel?: typeof Unit
+  ManagerModel?: typeof Manager,
+  PropertyModel?: typeof Property
 ): Promise<typeof Tenant> => {
   if (sequelize) {
     Tenant.init(
@@ -62,43 +60,37 @@ export const getTenantModel = async (
           type: DataTypes.STRING,
           allowNull: false
         },
+        profileImage: {
+          type: DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "managers", key: "id" }
+        },
         propertyId: {
           type: DataTypes.INTEGER,
-          allowNull: false
-        },
-        unitId: {
-          type: DataTypes.INTEGER,
-          allowNull: true
+          allowNull: false,
+          references: { model: "properties", key: "id" }
         }
       },
       {
         sequelize,
         modelName: "tenant",
+        tableName: "tenants",
         timestamps: false
       }
     );
 
-    // Associations
-    if (PropertyModel) {
-      Tenant.belongsTo(PropertyModel, {
-        foreignKey: "propertyId",
-        as: "property"
-      });
-      PropertyModel.hasMany(Tenant, {
-        foreignKey: "propertyId",
-        as: "tenants"
-      });
+    if (ManagerModel) {
+      Tenant.belongsTo(ManagerModel, { foreignKey: "managerId", as: "manager" });
+      ManagerModel.hasMany(Tenant, { foreignKey: "managerId", as: "tenants" });
     }
 
-    if (UnitModel) {
-      Tenant.belongsTo(UnitModel, {
-        foreignKey: "unitId",
-        as: "unit"
-      });
-      UnitModel.hasOne(Tenant, {
-        foreignKey: "unitId",
-        as: "tenant"
-      });
+    if (PropertyModel) {
+      Tenant.belongsTo(PropertyModel, { foreignKey: "propertyId", as: "property" });
+      PropertyModel.hasMany(Tenant, { foreignKey: "propertyId", as: "tenants" });
     }
 
     await Tenant.sync();
@@ -107,6 +99,5 @@ export const getTenantModel = async (
   return Tenant;
 };
 
-// 3. Export class and type
 export { Tenant };
 export type ITenant = InferAttributes<Tenant>;

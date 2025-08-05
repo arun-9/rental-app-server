@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getProperty.ts
-var getProperty_exports = {};
-__export(getProperty_exports, {
+// src/handlers/updateProperty.ts
+var updateProperty_exports = {};
+__export(updateProperty_exports, {
   default: () => handler
 });
-module.exports = __toCommonJS(getProperty_exports);
+module.exports = __toCommonJS(updateProperty_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -174,7 +174,7 @@ var getManagerModel = async (sequelize2) => {
   return Manager;
 };
 
-// src/handlers/getProperty.ts
+// src/handlers/updateProperty.ts
 var PropertyModel = null;
 var corsHeaders = {
   "Content-Type": "application/json",
@@ -185,20 +185,30 @@ async function handler(event) {
     const sequelize2 = await connectToDb();
     const ManagerModel = await getManagerModel(sequelize2);
     PropertyModel = await getPropertyModel(sequelize2, ManagerModel);
-    const propertyId = event.pathParameters?.id;
-    const result = propertyId ? await PropertyModel.findByPk(propertyId) : await PropertyModel.findAll();
+    const id = event.pathParameters?.id;
+    const updates = event.body ? JSON.parse(event.body) : {};
+    if (!id) throw new Error("Property ID is required");
+    const property = await PropertyModel.findByPk(id);
+    if (!property) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Property not found" })
+      };
+    }
+    await property.update(updates);
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify(result)
+      body: JSON.stringify(property.toJSON())
     };
   } catch (error) {
-    console.error("Failed to fetch property:", error);
+    console.error("Failed to update property:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to fetch property" })
+      body: JSON.stringify({ error: "Failed to update property" })
     };
   }
 }
-//# sourceMappingURL=getProperty.js.map
+//# sourceMappingURL=updateProperty.js.map

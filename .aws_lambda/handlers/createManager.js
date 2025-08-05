@@ -85,7 +85,9 @@ var getManagerModel = async (sequelize3) => {
       {
         sequelize: sequelize3,
         modelName: "manager",
-        timestamps: false
+        tableName: "managers",
+        timestamps: false,
+        comment: "Managers who manage properties, tenants, and units"
       }
     );
     await Manager.sync();
@@ -94,7 +96,6 @@ var getManagerModel = async (sequelize3) => {
 };
 
 // src/handlers/createManager.ts
-var import_sequelize3 = require("sequelize");
 var sequelize2 = null;
 var ManagerModel = null;
 var corsHeaders = {
@@ -107,33 +108,28 @@ async function handler(event) {
       sequelize2 = await connectToDb();
       ManagerModel = await getManagerModel(sequelize2);
     }
-    if (!ManagerModel) throw new Error("Manager model not initialized");
     const body = event.body ? JSON.parse(event.body) : {};
-    const createdManager = await ManagerModel.create(body);
-    return {
-      statusCode: 201,
-      headers: corsHeaders,
-      body: JSON.stringify(createdManager.toJSON())
-    };
-  } catch (error) {
-    console.error("Failed to create manager:", error);
-    if (error instanceof import_sequelize3.UniqueConstraintError) {
-      return {
-        statusCode: 409,
-        // Conflict
-        headers: corsHeaders,
-        body: JSON.stringify({
-          error: "Manager with given unique field already exists."
-        })
-      };
-    }
-    if (error instanceof import_sequelize3.ValidationError) {
+    const { name, email, phoneNumber, cognitoId } = body;
+    if (!name || !email || !phoneNumber || !cognitoId) {
       return {
         statusCode: 400,
         headers: corsHeaders,
-        body: JSON.stringify({ error: error.message })
+        body: JSON.stringify({ error: "Missing required fields" })
       };
     }
+    const created = await ManagerModel.create({
+      name,
+      email,
+      phoneNumber,
+      cognitoId
+    });
+    return {
+      statusCode: 201,
+      headers: corsHeaders,
+      body: JSON.stringify(created.toJSON())
+    };
+  } catch (error) {
+    console.error("Create manager error:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,

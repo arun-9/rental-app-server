@@ -1,11 +1,12 @@
+// src/handlers/createManager.ts
 import { connectToDb } from "../db/connection";
 import { getManagerModel, Manager } from "../db/models/Manager";
-import { ValidationError, UniqueConstraintError } from "sequelize";
-import type { Sequelize } from "sequelize";
+
 import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyResultV2,
 } from "aws-lambda";
+import type { Sequelize } from "sequelize";
 
 let sequelize: Sequelize | null = null;
 let ManagerModel: typeof Manager | null = null;
@@ -24,38 +25,31 @@ export default async function handler(
       ManagerModel = await getManagerModel(sequelize);
     }
 
-    if (!ManagerModel) throw new Error("Manager model not initialized");
-
     const body = event.body ? JSON.parse(event.body) : {};
+    const { name, email, phoneNumber, cognitoId } = body;
 
-    const createdManager = await ManagerModel.create(body);
+    if (!name || !email || !phoneNumber || !cognitoId) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Missing required fields" }),
+      };
+    }
+
+    const created = await ManagerModel!.create({
+      name,
+      email,
+      phoneNumber,
+      cognitoId,
+    });
 
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(createdManager.toJSON()),
+      body: JSON.stringify(created.toJSON()),
     };
-  } catch (error: any) {
-    console.error("Failed to create manager:", error);
-
-    if (error instanceof UniqueConstraintError) {
-      return {
-        statusCode: 409, // Conflict
-        headers: corsHeaders,
-        body: JSON.stringify({
-          error: "Manager with given unique field already exists.",
-        }),
-      };
-    }
-
-    if (error instanceof ValidationError) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
+  } catch (error) {
+    console.error("Create manager error:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,

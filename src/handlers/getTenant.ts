@@ -1,6 +1,6 @@
 // src/handlers/getTenant.ts
 import { connectToDb } from "../db/connection";
-import { getTenantModel, Tenant } from "../db/models/tenant"; // Capitalized 'Tenant'
+import { getTenantModel, Tenant } from "../db/models/Tenant"; // Capitalized 'Tenant'
 import type { Sequelize } from "sequelize";
 import type {
   APIGatewayProxyEventV2,

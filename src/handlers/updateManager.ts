@@ -1,4 +1,4 @@
-// src/handlers/getManager.ts
+// src/handlers/updateManager.ts
 import { connectToDb } from "../db/connection";
 import { getManagerModel, Manager } from "../db/models/Manager";
 import type { Sequelize } from "sequelize";
@@ -27,23 +27,43 @@ export default async function handler(
     if (!ManagerModel) throw new Error("Manager model not initialized");
 
     const { pathParameters } = event;
-    const cognitoId = pathParameters?.cognitoId;
+    const id = pathParameters?.id;
 
-    const result = cognitoId
-      ? await ManagerModel.findOne({ where: { cognitoId } })
-      : await ManagerModel.findAll();
+    if (!id) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Manager ID is required" }),
+      };
+    }
+
+    const updates = event.body ? JSON.parse(event.body) : {};
+    const manager = await ManagerModel.findByPk(id);
+
+    if (!manager) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Manager not found" }),
+      };
+    }
+
+    await manager.update(updates);
 
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify(result),
+      body: JSON.stringify({
+        message: "Manager updated successfully",
+        updatedManager: manager,
+      }),
     };
   } catch (error) {
-    console.error("Failed to get manager(s):", error);
+    console.error("Failed to update manager:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to get manager(s)" }),
+      body: JSON.stringify({ error: "Failed to update manager" }),
     };
   }
 }

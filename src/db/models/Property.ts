@@ -8,7 +8,10 @@ import {
   CreationOptional,
   ForeignKey
 } from "sequelize";
+
 import type { Manager } from "./Manager";
+import type { Unit } from "./Unit";
+import type { Tenant } from "./tenant";
 
 // 1. Typed Property class
 class Property extends Model<
@@ -18,19 +21,21 @@ class Property extends Model<
   declare id: CreationOptional<number>;
   declare name: string;
   declare address: string;
-  declare numberOfUnits: number;
-  declare numberOfTenants: number;
   declare thumbnail: string | null;
 
-  // Foreign key and association
   declare managerId: ForeignKey<Manager["id"]>;
+
   declare manager?: Manager;
+  declare units?: Unit[];
+  declare tenants?: Tenant[];
 }
 
 // 2. Initialization function
 export const getPropertyModel = async (
   sequelize?: Sequelize,
-  ManagerModel?: typeof Manager
+  ManagerModel?: typeof Manager,
+  UnitModel?: typeof Unit,
+  TenantModel?: typeof Tenant
 ): Promise<typeof Property> => {
   if (sequelize) {
     Property.init(
@@ -48,14 +53,6 @@ export const getPropertyModel = async (
           type: DataTypes.STRING,
           allowNull: false
         },
-        numberOfUnits: {
-          type: DataTypes.INTEGER,
-          allowNull: false
-        },
-        numberOfTenants: {
-          type: DataTypes.INTEGER,
-          allowNull: false
-        },
         thumbnail: {
           type: DataTypes.STRING,
           allowNull: true
@@ -66,29 +63,56 @@ export const getPropertyModel = async (
           references: {
             model: "managers",
             key: "id"
-          }
+          },
+          onDelete: "CASCADE",
+          onUpdate: "CASCADE"
         }
       },
       {
         sequelize,
         modelName: "property",
-        timestamps: false
+        tableName: "properties",
+        timestamps: false,
+        comment: "Property records managed by managers"
       }
     );
 
+    // Associations
     if (ManagerModel) {
       Property.belongsTo(ManagerModel, {
         foreignKey: "managerId",
-        as: "manager"
+        as: "manager",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
       });
 
       ManagerModel.hasMany(Property, {
         foreignKey: "managerId",
-        as: "properties"
+        as: "properties",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
       });
     }
 
-    await Property.sync();
+    if (UnitModel) {
+      Property.hasMany(UnitModel, {
+        foreignKey: "propertyId",
+        as: "units",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
+      });
+    }
+
+    if (TenantModel) {
+      Property.hasMany(TenantModel, {
+        foreignKey: "propertyId",
+        as: "tenants",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
+      });
+    }
+
+    await Property.sync(); // Avoid this in production or use conditionally
   }
 
   return Property;

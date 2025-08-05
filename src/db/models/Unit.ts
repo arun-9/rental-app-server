@@ -10,30 +10,31 @@ import {
 } from "sequelize";
 
 import type { Property } from "./Property";
-import type { Tenant } from "./tenant";
+import type { Tenant } from "./Tenant";
+import type { Manager } from "./Manager";
 
-// 1. Define the class with typings
 class Unit extends Model<
   InferAttributes<Unit>,
   InferCreationAttributes<Unit>
 > {
   declare id: CreationOptional<number>;
   declare unitNumber: string;
-  declare isVacant: boolean;
+  declare status: "Vacant" | "Occupied";
 
   declare propertyId: ForeignKey<Property["id"]>;
   declare tenantId: ForeignKey<Tenant["id"]> | null;
+  declare managerId: ForeignKey<Manager["id"]>;
 
-  // Optional association references
   declare property?: Property;
   declare tenant?: Tenant;
+  declare manager?: Manager;
 }
 
-// 2. Define and initialize the model
 export const getUnitModel = async (
   sequelize?: Sequelize,
   PropertyModel?: typeof Property,
-  TenantModel?: typeof Tenant
+  TenantModel?: typeof Tenant,
+  ManagerModel?: typeof Manager
 ): Promise<typeof Unit> => {
   if (sequelize) {
     Unit.init(
@@ -47,50 +48,47 @@ export const getUnitModel = async (
           type: DataTypes.STRING,
           allowNull: false
         },
-        isVacant: {
-          type: DataTypes.BOOLEAN,
-          allowNull: false,
-          defaultValue: true
+        status: {
+          type: DataTypes.ENUM("Vacant", "Occupied"),
+          allowNull: false
         },
         propertyId: {
           type: DataTypes.INTEGER,
-          allowNull: false
+          allowNull: false,
+          references: { model: "properties", key: "id" }
         },
         tenantId: {
           type: DataTypes.INTEGER,
-          allowNull: true
+          allowNull: true,
+          references: { model: "tenants", key: "id" }
+        },
+        managerId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "managers", key: "id" }
         }
       },
       {
         sequelize,
         modelName: "unit",
+        tableName: "units",
         timestamps: false
       }
     );
 
-    // 3. Define associations
     if (PropertyModel) {
-      Unit.belongsTo(PropertyModel, {
-        foreignKey: "propertyId",
-        as: "property"
-      });
-
-      PropertyModel.hasMany(Unit, {
-        foreignKey: "propertyId",
-        as: "units"
-      });
+      Unit.belongsTo(PropertyModel, { foreignKey: "propertyId", as: "property" });
+      PropertyModel.hasMany(Unit, { foreignKey: "propertyId", as: "units" });
     }
 
     if (TenantModel) {
-      Unit.belongsTo(TenantModel, {
-        foreignKey: "tenantId",
-        as: "tenant"
-      });
+      Unit.belongsTo(TenantModel, { foreignKey: "tenantId", as: "tenant" });
+      TenantModel.hasOne(Unit, { foreignKey: "tenantId", as: "unit" });
+    }
 
-      TenantModel.hasOne(Unit, {
-        foreignKey: "tenantId",
-        as: "unit"
-      });
+    if (ManagerModel) {
+      Unit.belongsTo(ManagerModel, { foreignKey: "managerId", as: "manager" });
+      ManagerModel.hasMany(Unit, { foreignKey: "managerId", as: "units" });
     }
 
     await Unit.sync();
@@ -99,6 +97,5 @@ export const getUnitModel = async (
   return Unit;
 };
 
-// 4. Export model and TS type
 export { Unit };
 export type IUnit = InferAttributes<Unit>;
