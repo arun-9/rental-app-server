@@ -19,7 +19,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/handlers/getTenant.ts
 var getTenant_exports = {};
 __export(getTenant_exports, {
-  default: () => getTenant_default
+  default: () => handler
 });
 module.exports = __toCommonJS(getTenant_exports);
 
@@ -51,49 +51,66 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/tenant.ts
+// src/db/models/Tenant.ts
 var import_sequelize2 = require("sequelize");
 var Tenant = class extends import_sequelize2.Model {
 };
-var schema = {
-  id: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  cognitoId: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  name: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  email: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  phoneNumber: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  propertyId: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
-  },
-  unitId: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: true
-  }
-};
-var getTenantModel = async (sequelize3) => {
+var getTenantModel = async (sequelize3, ManagerModel, PropertyModel) => {
   if (sequelize3) {
-    Tenant.init(schema, {
-      sequelize: sequelize3,
-      modelName: "tenant",
-      timestamps: false
-    });
+    Tenant.init(
+      {
+        id: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        cognitoId: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false,
+          unique: true
+        },
+        name: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        email: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        phoneNumber: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        profileImage: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "managers", key: "id" }
+        },
+        propertyId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "properties", key: "id" }
+        }
+      },
+      {
+        sequelize: sequelize3,
+        modelName: "tenant",
+        tableName: "tenants",
+        timestamps: false
+      }
+    );
+    if (ManagerModel) {
+      Tenant.belongsTo(ManagerModel, { foreignKey: "managerId", as: "manager" });
+      ManagerModel.hasMany(Tenant, { foreignKey: "managerId", as: "tenants" });
+    }
+    if (PropertyModel) {
+      Tenant.belongsTo(PropertyModel, { foreignKey: "propertyId", as: "property" });
+      PropertyModel.hasMany(Tenant, { foreignKey: "propertyId", as: "tenants" });
+    }
     await Tenant.sync();
   }
   return Tenant;
@@ -101,19 +118,22 @@ var getTenantModel = async (sequelize3) => {
 
 // src/handlers/getTenant.ts
 var sequelize2 = null;
-var Tenant2 = null;
+var TenantModel = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-var getTenant_default = async (event) => {
+async function handler(event) {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      Tenant2 = await getTenantModel(sequelize2);
+      TenantModel = await getTenantModel(sequelize2);
+    }
+    if (!TenantModel) {
+      throw new Error("Tenant model not initialized");
     }
     const id = event.pathParameters?.id;
-    const result = id ? await Tenant2.findByPk(id) : await Tenant2.findAll();
+    const result = id ? await TenantModel.findByPk(id) : await TenantModel.findAll();
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -127,5 +147,5 @@ var getTenant_default = async (event) => {
       body: JSON.stringify({ error: "Failed to fetch tenant(s)" })
     };
   }
-};
+}
 //# sourceMappingURL=getTenant.js.map

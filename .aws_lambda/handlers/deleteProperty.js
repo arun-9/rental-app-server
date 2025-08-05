@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getProperty.ts
-var getProperty_exports = {};
-__export(getProperty_exports, {
+// src/handlers/deleteProperty.ts
+var deleteProperty_exports = {};
+__export(deleteProperty_exports, {
   default: () => handler
 });
-module.exports = __toCommonJS(getProperty_exports);
+module.exports = __toCommonJS(deleteProperty_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -174,7 +174,7 @@ var getManagerModel = async (sequelize2) => {
   return Manager;
 };
 
-// src/handlers/getProperty.ts
+// src/handlers/deleteProperty.ts
 var PropertyModel = null;
 var corsHeaders = {
   "Content-Type": "application/json",
@@ -185,20 +185,29 @@ async function handler(event) {
     const sequelize2 = await connectToDb();
     const ManagerModel = await getManagerModel(sequelize2);
     PropertyModel = await getPropertyModel(sequelize2, ManagerModel);
-    const propertyId = event.pathParameters?.id;
-    const result = propertyId ? await PropertyModel.findByPk(propertyId) : await PropertyModel.findAll();
+    const id = event.pathParameters?.id;
+    if (!id) throw new Error("Property ID is required");
+    const property = await PropertyModel.findByPk(id);
+    if (!property) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Property not found" })
+      };
+    }
+    await property.destroy();
     return {
-      statusCode: 200,
+      statusCode: 204,
       headers: corsHeaders,
-      body: JSON.stringify(result)
+      body: ""
     };
   } catch (error) {
-    console.error("Failed to fetch property:", error);
+    console.error("Failed to delete property:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to fetch property" })
+      body: JSON.stringify({ error: "Failed to delete property" })
     };
   }
 }
-//# sourceMappingURL=getProperty.js.map
+//# sourceMappingURL=deleteProperty.js.map

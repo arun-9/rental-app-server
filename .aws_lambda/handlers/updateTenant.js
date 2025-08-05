@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getManager.ts
-var getManager_exports = {};
-__export(getManager_exports, {
-  default: () => handler
+// src/handlers/updateTenant.ts
+var updateTenant_exports = {};
+__export(updateTenant_exports, {
+  default: () => updateTenantHandler
 });
-module.exports = __toCommonJS(getManager_exports);
+module.exports = __toCommonJS(updateTenant_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -51,13 +51,13 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/Manager.ts
+// src/db/models/Tenant.ts
 var import_sequelize2 = require("sequelize");
-var Manager = class extends import_sequelize2.Model {
+var Tenant = class extends import_sequelize2.Model {
 };
-var getManagerModel = async (sequelize3) => {
+var getTenantModel = async (sequelize3, ManagerModel, PropertyModel) => {
   if (sequelize3) {
-    Manager.init(
+    Tenant.init(
       {
         id: {
           type: import_sequelize2.DataTypes.INTEGER,
@@ -80,50 +80,88 @@ var getManagerModel = async (sequelize3) => {
         phoneNumber: {
           type: import_sequelize2.DataTypes.STRING,
           allowNull: false
+        },
+        profileImage: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "managers", key: "id" }
+        },
+        propertyId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "properties", key: "id" }
         }
       },
       {
         sequelize: sequelize3,
-        modelName: "manager",
-        tableName: "managers",
-        timestamps: false,
-        comment: "Managers who manage properties, tenants, and units"
+        modelName: "tenant",
+        tableName: "tenants",
+        timestamps: false
       }
     );
-    await Manager.sync();
+    if (ManagerModel) {
+      Tenant.belongsTo(ManagerModel, { foreignKey: "managerId", as: "manager" });
+      ManagerModel.hasMany(Tenant, { foreignKey: "managerId", as: "tenants" });
+    }
+    if (PropertyModel) {
+      Tenant.belongsTo(PropertyModel, { foreignKey: "propertyId", as: "property" });
+      PropertyModel.hasMany(Tenant, { foreignKey: "propertyId", as: "tenants" });
+    }
+    await Tenant.sync();
   }
-  return Manager;
+  return Tenant;
 };
 
-// src/handlers/getManager.ts
+// src/handlers/updateTenant.ts
 var sequelize2 = null;
-var ManagerModel = null;
+var TenantModel = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-async function handler(event) {
+async function updateTenantHandler(event) {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      ManagerModel = await getManagerModel(sequelize2);
+      TenantModel = await getTenantModel(sequelize2);
     }
-    if (!ManagerModel) throw new Error("Manager model not initialized");
-    const { pathParameters } = event;
-    const cognitoId = pathParameters?.cognitoId;
-    const result = cognitoId ? await ManagerModel.findOne({ where: { cognitoId } }) : await ManagerModel.findAll();
+    if (!TenantModel) throw new Error("Tenant model not initialized");
+    const tenantId = event.pathParameters?.id;
+    if (!tenantId) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Missing tenant ID" })
+      };
+    }
+    const body = event.body ? JSON.parse(event.body) : {};
+    const [affectedRows] = await TenantModel.update(body, {
+      where: { id: tenantId }
+    });
+    if (affectedRows === 0) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Tenant not found" })
+      };
+    }
+    const updatedTenant = await TenantModel.findByPk(tenantId);
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify(result)
+      body: JSON.stringify(updatedTenant?.toJSON())
     };
   } catch (error) {
-    console.error("Failed to get manager(s):", error);
+    console.error("Failed to update tenant:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to get manager(s)" })
+      body: JSON.stringify({ error: "Failed to update tenant" })
     };
   }
 }
-//# sourceMappingURL=getManager.js.map
+//# sourceMappingURL=updateTenant.js.map

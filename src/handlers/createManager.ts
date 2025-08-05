@@ -1,42 +1,59 @@
+// src/handlers/createManager.ts
 import { connectToDb } from "../db/connection";
-import { getManagerModel } from "../db/models/Manager"; 
-import type { IManager } from "../db/models/Manager";
+import { getManagerModel, Manager } from "../db/models/Manager";
+
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from "aws-lambda";
 import type { Sequelize } from "sequelize";
-import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 
 let sequelize: Sequelize | null = null;
-let Manager: IManager | null = null;
+let ManagerModel: typeof Manager | null = null;
 
-// CORS headers reused for all responses (still useful even in v2)
 const corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
 };
 
-export default async (
+export default async function handler(
   event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> => {
+): Promise<APIGatewayProxyResultV2> {
   try {
     if (!sequelize) {
       sequelize = await connectToDb();
-      Manager = await getManagerModel(sequelize);
+      ManagerModel = await getManagerModel(sequelize);
     }
 
     const body = event.body ? JSON.parse(event.body) : {};
+    const { name, email, phoneNumber, cognitoId } = body;
 
-    const createdManager = await Manager.create(body, { returning: true });
+    if (!name || !email || !phoneNumber || !cognitoId) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Missing required fields" }),
+      };
+    }
+
+    const created = await ManagerModel!.create({
+      name,
+      email,
+      phoneNumber,
+      cognitoId,
+    });
 
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(createdManager.toJSON()),
+      body: JSON.stringify(created.toJSON()),
     };
   } catch (error) {
-    console.error("Failed to create manager:", error);
+    console.error("Create manager error:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
       body: JSON.stringify({ error: "Failed to create manager" }),
     };
   }
-};
+}

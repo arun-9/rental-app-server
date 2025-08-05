@@ -19,7 +19,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/handlers/createTenant.ts
 var createTenant_exports = {};
 __export(createTenant_exports, {
-  default: () => createTenant_default
+  default: () => handler
 });
 module.exports = __toCommonJS(createTenant_exports);
 
@@ -51,81 +51,252 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/tenant.ts
+// src/db/models/Tenant.ts
 var import_sequelize2 = require("sequelize");
 var Tenant = class extends import_sequelize2.Model {
 };
-var schema = {
-  id: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  cognitoId: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  name: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  email: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  phoneNumber: {
-    type: import_sequelize2.DataTypes.STRING,
-    allowNull: false
-  },
-  propertyId: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: false
-  },
-  unitId: {
-    type: import_sequelize2.DataTypes.INTEGER,
-    allowNull: true
-  }
-};
-var getTenantModel = async (sequelize3) => {
+var getTenantModel = async (sequelize3, ManagerModel, PropertyModel) => {
   if (sequelize3) {
-    Tenant.init(schema, {
-      sequelize: sequelize3,
-      modelName: "tenant",
-      timestamps: false
-    });
+    Tenant.init(
+      {
+        id: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        cognitoId: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false,
+          unique: true
+        },
+        name: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        email: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        phoneNumber: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: false
+        },
+        profileImage: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "managers", key: "id" }
+        },
+        propertyId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "properties", key: "id" }
+        }
+      },
+      {
+        sequelize: sequelize3,
+        modelName: "tenant",
+        tableName: "tenants",
+        timestamps: false
+      }
+    );
+    if (ManagerModel) {
+      Tenant.belongsTo(ManagerModel, { foreignKey: "managerId", as: "manager" });
+      ManagerModel.hasMany(Tenant, { foreignKey: "managerId", as: "tenants" });
+    }
+    if (PropertyModel) {
+      Tenant.belongsTo(PropertyModel, { foreignKey: "propertyId", as: "property" });
+      PropertyModel.hasMany(Tenant, { foreignKey: "propertyId", as: "tenants" });
+    }
     await Tenant.sync();
   }
   return Tenant;
 };
 
+// src/db/models/Manager.ts
+var import_sequelize3 = require("sequelize");
+var Manager = class extends import_sequelize3.Model {
+};
+var getManagerModel = async (sequelize3) => {
+  if (sequelize3) {
+    Manager.init(
+      {
+        id: {
+          type: import_sequelize3.DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        cognitoId: {
+          type: import_sequelize3.DataTypes.STRING,
+          allowNull: false,
+          unique: true
+        },
+        name: {
+          type: import_sequelize3.DataTypes.STRING,
+          allowNull: false
+        },
+        email: {
+          type: import_sequelize3.DataTypes.STRING,
+          allowNull: false
+        },
+        phoneNumber: {
+          type: import_sequelize3.DataTypes.STRING,
+          allowNull: false
+        }
+      },
+      {
+        sequelize: sequelize3,
+        modelName: "manager",
+        tableName: "managers",
+        timestamps: false,
+        comment: "Managers who manage properties, tenants, and units"
+      }
+    );
+    await Manager.sync();
+  }
+  return Manager;
+};
+
+// src/db/models/Property.ts
+var import_sequelize4 = require("sequelize");
+var Property = class extends import_sequelize4.Model {
+};
+var getPropertyModel = async (sequelize3, ManagerModel, UnitModel, TenantModel2) => {
+  if (sequelize3) {
+    Property.init(
+      {
+        id: {
+          type: import_sequelize4.DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        name: {
+          type: import_sequelize4.DataTypes.STRING,
+          allowNull: false
+        },
+        address: {
+          type: import_sequelize4.DataTypes.STRING,
+          allowNull: false
+        },
+        thumbnail: {
+          type: import_sequelize4.DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: import_sequelize4.DataTypes.INTEGER,
+          allowNull: false,
+          references: {
+            model: "managers",
+            key: "id"
+          },
+          onDelete: "CASCADE",
+          onUpdate: "CASCADE"
+        }
+      },
+      {
+        sequelize: sequelize3,
+        modelName: "property",
+        tableName: "properties",
+        timestamps: false,
+        comment: "Property records managed by managers"
+      }
+    );
+    if (ManagerModel) {
+      Property.belongsTo(ManagerModel, {
+        foreignKey: "managerId",
+        as: "manager",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
+      });
+      ManagerModel.hasMany(Property, {
+        foreignKey: "managerId",
+        as: "properties",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
+      });
+    }
+    if (UnitModel) {
+      Property.hasMany(UnitModel, {
+        foreignKey: "propertyId",
+        as: "units",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
+      });
+    }
+    if (TenantModel2) {
+      Property.hasMany(TenantModel2, {
+        foreignKey: "propertyId",
+        as: "tenants",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE"
+      });
+    }
+    await Property.sync();
+  }
+  return Property;
+};
+
 // src/handlers/createTenant.ts
 var sequelize2 = null;
-var Tenant2 = null;
+var TenantModel = null;
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-var createTenant_default = async (event) => {
+async function handler(event) {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      Tenant2 = await getTenantModel(sequelize2);
+      const ManagerModel = await getManagerModel(sequelize2);
+      const PropertyModel = await getPropertyModel(sequelize2, ManagerModel);
+      TenantModel = await getTenantModel(
+        sequelize2,
+        ManagerModel,
+        PropertyModel
+      );
     }
+    if (!TenantModel) throw new Error("Tenant model not initialized");
     const body = event.body ? JSON.parse(event.body) : {};
-    const createdTenant = await Tenant2.create(body, { returning: true });
+    const {
+      name,
+      email,
+      phoneNumber,
+      profileImage,
+      propertyId,
+      managerId,
+      cognitoId
+    } = body;
+    if (!name || !email || !phoneNumber || !propertyId || !managerId || !cognitoId) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Missing required fields" })
+      };
+    }
+    const tenant = await TenantModel.create({
+      name,
+      email,
+      phoneNumber,
+      profileImage: profileImage || null,
+      propertyId,
+      managerId,
+      cognitoId
+    });
     return {
       statusCode: 201,
       headers: corsHeaders,
-      body: JSON.stringify(createdTenant.toJSON())
+      body: JSON.stringify(tenant.toJSON())
     };
   } catch (error) {
-    console.error("Failed to create tenant:", error);
+    console.error("Create tenant error:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
       body: JSON.stringify({ error: "Failed to create tenant" })
     };
   }
-};
+}
 //# sourceMappingURL=createTenant.js.map

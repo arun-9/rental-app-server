@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getManager.ts
-var getManager_exports = {};
-__export(getManager_exports, {
+// src/handlers/deleteManager.ts
+var deleteManager_exports = {};
+__export(deleteManager_exports, {
   default: () => handler
 });
-module.exports = __toCommonJS(getManager_exports);
+module.exports = __toCommonJS(deleteManager_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -95,7 +95,7 @@ var getManagerModel = async (sequelize3) => {
   return Manager;
 };
 
-// src/handlers/getManager.ts
+// src/handlers/deleteManager.ts
 var sequelize2 = null;
 var ManagerModel = null;
 var corsHeaders = {
@@ -110,20 +110,35 @@ async function handler(event) {
     }
     if (!ManagerModel) throw new Error("Manager model not initialized");
     const { pathParameters } = event;
-    const cognitoId = pathParameters?.cognitoId;
-    const result = cognitoId ? await ManagerModel.findOne({ where: { cognitoId } }) : await ManagerModel.findAll();
+    const id = pathParameters?.id;
+    if (!id) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Manager ID is required" })
+      };
+    }
+    const manager = await ManagerModel.findByPk(id);
+    if (!manager) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Manager not found" })
+      };
+    }
+    await manager.destroy();
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify(result)
+      body: JSON.stringify({ message: "Manager deleted successfully" })
     };
   } catch (error) {
-    console.error("Failed to get manager(s):", error);
+    console.error("Failed to delete manager:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to get manager(s)" })
+      body: JSON.stringify({ error: "Failed to delete manager" })
     };
   }
 }
-//# sourceMappingURL=getManager.js.map
+//# sourceMappingURL=deleteManager.js.map

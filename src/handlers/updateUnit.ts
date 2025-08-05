@@ -1,13 +1,16 @@
-// src/handlers/getUnit.ts
+// src/handlers/updateUnit.ts
 import { connectToDb } from "../db/connection";
 import { getUnitModel, Unit } from "../db/models/Unit";
 import { getPropertyModel } from "../db/models/Property";
 import { getTenantModel } from "../db/models/Tenant";
-import { getManagerModel } from "../db/models/Manager";
 
-import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyResultV2,
+} from "aws-lambda";
+import type { Sequelize } from "sequelize";
 
-let sequelize: any = null;
+let sequelize: Sequelize | null = null;
 let UnitModel: typeof Unit | null = null;
 
 const corsHeaders = {
@@ -23,41 +26,36 @@ export default async function handler(
       sequelize = await connectToDb();
       const PropertyModel = await getPropertyModel(sequelize);
       const TenantModel = await getTenantModel(sequelize);
-      const ManagerModel = await getManagerModel(sequelize);
-      UnitModel = await getUnitModel(sequelize, PropertyModel, TenantModel, ManagerModel);
+      UnitModel = await getUnitModel(sequelize, PropertyModel, TenantModel);
     }
 
     if (!UnitModel) throw new Error("Unit model not initialized");
 
-    const id = event.pathParameters?.id;
-    if (id) {
-      const unit = await UnitModel.findByPk(id);
-      if (!unit) {
-        return {
-          statusCode: 404,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: "Unit not found" }),
-        };
-      }
+    const unitId = event.pathParameters?.id;
+    const body = event.body ? JSON.parse(event.body) : {};
+
+    const unit = await UnitModel.findByPk(unitId);
+    if (!unit) {
       return {
-        statusCode: 200,
+        statusCode: 404,
         headers: corsHeaders,
-        body: JSON.stringify(unit.toJSON()),
+        body: JSON.stringify({ error: "Unit not found" }),
       };
     }
 
-    const units = await UnitModel.findAll();
+    await unit.update(body);
+
     return {
       statusCode: 200,
       headers: corsHeaders,
-      body: JSON.stringify(units.map((u) => u.toJSON())),
+      body: JSON.stringify(unit.toJSON()),
     };
   } catch (error) {
-    console.error("Failed to get unit(s):", error);
+    console.error("Failed to update unit:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to get unit(s)" }),
+      body: JSON.stringify({ error: "Failed to update unit" }),
     };
   }
 }

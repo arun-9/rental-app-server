@@ -16,12 +16,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/handlers/getManager.ts
-var getManager_exports = {};
-__export(getManager_exports, {
-  default: () => handler
+// src/handlers/deleteTenant.ts
+var deleteTenant_exports = {};
+__export(deleteTenant_exports, {
+  deleteTenantHandler: () => deleteTenantHandler
 });
-module.exports = __toCommonJS(getManager_exports);
+module.exports = __toCommonJS(deleteTenant_exports);
 
 // src/db/connection.ts
 var import_sequelize = require("sequelize");
@@ -51,13 +51,13 @@ var connectToDb = async () => {
   return sequelize;
 };
 
-// src/db/models/Manager.ts
+// src/db/models/Tenant.ts
 var import_sequelize2 = require("sequelize");
-var Manager = class extends import_sequelize2.Model {
+var Tenant = class extends import_sequelize2.Model {
 };
-var getManagerModel = async (sequelize3) => {
+var getTenantModel = async (sequelize3, ManagerModel, PropertyModel) => {
   if (sequelize3) {
-    Manager.init(
+    Tenant.init(
       {
         id: {
           type: import_sequelize2.DataTypes.INTEGER,
@@ -80,50 +80,88 @@ var getManagerModel = async (sequelize3) => {
         phoneNumber: {
           type: import_sequelize2.DataTypes.STRING,
           allowNull: false
+        },
+        profileImage: {
+          type: import_sequelize2.DataTypes.STRING,
+          allowNull: true
+        },
+        managerId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "managers", key: "id" }
+        },
+        propertyId: {
+          type: import_sequelize2.DataTypes.INTEGER,
+          allowNull: false,
+          references: { model: "properties", key: "id" }
         }
       },
       {
         sequelize: sequelize3,
-        modelName: "manager",
-        tableName: "managers",
-        timestamps: false,
-        comment: "Managers who manage properties, tenants, and units"
+        modelName: "tenant",
+        tableName: "tenants",
+        timestamps: false
       }
     );
-    await Manager.sync();
+    if (ManagerModel) {
+      Tenant.belongsTo(ManagerModel, { foreignKey: "managerId", as: "manager" });
+      ManagerModel.hasMany(Tenant, { foreignKey: "managerId", as: "tenants" });
+    }
+    if (PropertyModel) {
+      Tenant.belongsTo(PropertyModel, { foreignKey: "propertyId", as: "property" });
+      PropertyModel.hasMany(Tenant, { foreignKey: "propertyId", as: "tenants" });
+    }
+    await Tenant.sync();
   }
-  return Manager;
+  return Tenant;
 };
 
-// src/handlers/getManager.ts
-var sequelize2 = null;
-var ManagerModel = null;
+// src/handlers/deleteTenant.ts
 var corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*"
 };
-async function handler(event) {
+var sequelize2 = null;
+var TenantModel = null;
+async function deleteTenantHandler(event) {
   try {
     if (!sequelize2) {
       sequelize2 = await connectToDb();
-      ManagerModel = await getManagerModel(sequelize2);
+      TenantModel = await getTenantModel(sequelize2);
     }
-    if (!ManagerModel) throw new Error("Manager model not initialized");
-    const { pathParameters } = event;
-    const cognitoId = pathParameters?.cognitoId;
-    const result = cognitoId ? await ManagerModel.findOne({ where: { cognitoId } }) : await ManagerModel.findAll();
+    if (!TenantModel) throw new Error("Tenant model not initialized");
+    const tenantId = event.pathParameters?.id;
+    if (!tenantId) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Missing tenant ID" })
+      };
+    }
+    const deleted = await TenantModel.destroy({ where: { id: tenantId } });
+    if (deleted === 0) {
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: "Tenant not found" })
+      };
+    }
     return {
-      statusCode: 200,
+      statusCode: 204,
       headers: corsHeaders,
-      body: JSON.stringify(result)
+      body: ""
     };
   } catch (error) {
-    console.error("Failed to get manager(s):", error);
+    console.error("Failed to delete tenant:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "Failed to get manager(s)" })
+      body: JSON.stringify({ error: "Failed to delete tenant" })
     };
   }
 }
-//# sourceMappingURL=getManager.js.map
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  deleteTenantHandler
+});
+//# sourceMappingURL=deleteTenant.js.map
