@@ -7,9 +7,10 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.115",
     "cross-env": "^7.0.3",
-    "pg": "^8.11.0",
+    "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.31.1",
+    "sequelize-auto": "^0.8.8",
     "serverless-aws-lambda": "^5.0.3",
     "serverless-aws-lambda-vitest": "^1.1.0",
     "typescript": "^5.0.4"
@@ -21,7 +22,8 @@
     "start:db": "docker-compose up -d",
     "test": "sls aws-lambda -s local vitest",
     "test:oneshot": "sls aws-lambda -s local vitest oneshot",
-    "deploy": "sls deploy -s prod"
+    "deploy": "sls deploy -s prod",
+    "gen:types": "sequelize-auto -o ../client/src/types --url $DB_URL -l ts"
   },
   "dependencies": {
     "dotenv": "^17.1.0",
