@@ -11,7 +11,7 @@ import {
 
 import type { Manager } from "./Manager";
 import type { Unit } from "./Unit";
-import type { Tenant } from "./tenant";
+import type { Tenant } from "./Tenant";
 
 // 1. Typed Property class
 class Property extends Model<
